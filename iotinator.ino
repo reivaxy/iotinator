@@ -59,13 +59,14 @@ void setup(){
   printNumbers();
    
   // Initialise the OLED display
-  oledDisplay = new XOLEDDisplayClass(display);
+  oledDisplay = new XOLEDDisplayClass(&display);
   displayMessages();
 }
 
 void loop() {
   server.handleClient();
-
+  oledDisplay->refresh();
+  delay(100);
 }
 
 void printNumbers() {
@@ -139,9 +140,10 @@ void displayMessages( void )
   char message[100];
   oledDisplay->setTitle(config->getName());
   sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
-  oledDisplay->setLine1(message);  
+  oledDisplay->setLine(0, message);  
   IPAddress ipAddress = WiFi.softAPIP();
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
-  oledDisplay->setLine2(message);
-  oledDisplay->display();
+  oledDisplay->setLine(1, message, false, true);
+  oledDisplay->setLine(2, message);
+  oledDisplay->setLine(3, message);
 }
