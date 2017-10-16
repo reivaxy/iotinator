@@ -1,4 +1,11 @@
 # iotinator
 The global multipurpose home iot solution.
 
-This is a complete redesign of the aquaMonitor project, not any longer aquarium centric, with much much more modularity, taking advantage of the ESP8266 and/or ESP32 modules.
+This is the master module of the iotinator framework.
+
+
+It runs on esp8266 hardware, connected to a SIM800 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
+
+It connects to a domestic Wifi network and exposes a "private" Wifi network to communicate with slave modules.
+
+Configuration is persisted in EEPROM.
