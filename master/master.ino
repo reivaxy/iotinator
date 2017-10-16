@@ -5,22 +5,28 @@
  */
  
 #include <EEPROM.h>
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
+//#include <ESP8266WiFi.h>
+//#include <WiFiClient.h>
+//#include <ESP8266HTTPClient.h>
+//#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
+#include "XOLEDDisplay.h"
 
 // Global object to store config
 masterConfigDataType masterConfigData;
 MasterConfigClass *config;
+XOLEDDisplayClass *oledDisplay;
 
+// I couldn't find a way to instanciate this in the XOLEDDisplay lib
+// and keep it working further than in the constructor...
+SSD1306 display(0x3C, D5, D6);
+
+//MDNSResponder mdns;
 ESP8266WebServer server(80);
-MDNSResponder mdns;
 byte clientConnected = 0;
 boolean homeWifiConnected = false;
 
@@ -51,10 +57,15 @@ void setup(){
   Serial.println(WiFi.softAPIP());
   server.begin();
   printNumbers();
+   
+  // Initialise the OLED display
+  oledDisplay = new XOLEDDisplayClass(display);
+  displayMessages();
 }
 
 void loop() {
   server.handleClient();
+
 }
 
 void printNumbers() {
@@ -121,4 +132,16 @@ void sendPage(const char* msg, int code) {
   sprintf(html, format, msg);
   server.send(code, "text/html", html);
   free(html); 
+}
+
+void displayMessages( void )
+{
+  char message[100];
+  oledDisplay->setTitle(config->getName());
+  sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
+  oledDisplay->setLine1(message);  
+  IPAddress ipAddress = WiFi.softAPIP();
+  sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
+  oledDisplay->setLine2(message);
+  oledDisplay->display();
 }
