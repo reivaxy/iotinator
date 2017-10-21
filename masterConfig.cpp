@@ -9,7 +9,7 @@
 #include "masterConfig.h"
 #include "utils.h"
 
-MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):EEPROMConfigClass(version, name, dataPtr, sizeof(masterConfigDataType)) {
+MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(masterConfigDataType)) {
   Serial.println("MasterConfigClass::MasterConfigClass");
 
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
@@ -25,7 +25,7 @@ MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, voi
  */
 void MasterConfigClass::initFromDefault() {
   Serial.println("MasterConfigClass::initFromDefault");
-  EEPROMConfigClass::initFromDefault(); // handles version and name init
+  XEEPROMConfigClass::initFromDefault(); // handles version and name init
   
   // Reset all registered phone numbers
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "registeredPhoneNumber.h"
-#include "EEPROMConfig.h"
+#include "XEEPROMConfig.h"
 
 #define CONFIG_VERSION 2
 #define CONFIG_NAME "Iotinator"
@@ -48,7 +48,7 @@ typedef struct {
 } masterConfigDataType;
 
  
-class MasterConfigClass:public EEPROMConfigClass {
+class MasterConfigClass:public XEEPROMConfigClass {
 public:
   MasterConfigClass(unsigned int version, const char* name, void* dataPtr);
   virtual void initFromDefault(void) override;

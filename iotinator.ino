@@ -65,8 +65,8 @@ void setup(){
 
 void loop() {
   server.handleClient();
-  oledDisplay->refresh();
-  delay(100);
+  refreshDisplay();
+  delay(10);
 }
 
 void printNumbers() {
@@ -146,4 +146,8 @@ void displayMessages( void )
   oledDisplay->setLine(1, message, false, true);
   oledDisplay->setLine(2, message);
   oledDisplay->setLine(3, message);
+}
+
+void refreshDisplay(void) {
+  oledDisplay->refresh();
 }

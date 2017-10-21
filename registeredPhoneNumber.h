@@ -1,7 +1,7 @@
 /**
  *  Definition of the phone number class for the master module 
  *  The fields holding the data are grouped in a struc so that they can be easily and 
- *  safely saved/retrieved to/from EEPROM since they are part of a EEPROMConfig data structure.
+ *  safely saved/retrieved to/from EEPROM since they are part of a XEEPROMConfig data structure.
  *  Xavier Grosjean 2017
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
