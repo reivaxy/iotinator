@@ -15,6 +15,15 @@
 #include "initPageHtml.h"
 #include "masterConfig.h"
 #include "XOLEDDisplay.h"
+#include "gsm.h"
+
+#define TIME_STR_LENGTH 100
+
+//SIM800 TX is connected to RX MCU 13 (D7)
+#define SIM800_TX_PIN 13
+//SIM800 RX is connected to TX MCU 15 (D8)
+#define SIM800_RX_PIN 15
+SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 500);
 
 // Global object to store config
 masterConfigDataType masterConfigData;
@@ -25,12 +34,20 @@ XOLEDDisplayClass *oledDisplay;
 // and keep it working further than in the constructor...
 SSD1306 display(0x3C, D5, D6);
 
+GsmClass gsm(&serialSIM800);
+
 //MDNSResponder mdns;
 ESP8266WebServer server(80);
 byte clientConnected = 0;
 boolean homeWifiConnected = false;
+unsigned every200ms = 0;
+unsigned every500ms = 0;
+unsigned every2s = 0;
+unsigned every10s = 0;
 
 void setup(){
+  char timeStr[TIME_STR_LENGTH+1];
+  int result;
   Serial.begin(9600);
   delay(100);
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME, (void*)&masterConfigData);
@@ -61,12 +78,23 @@ void setup(){
   // Initialise the OLED display
   oledDisplay = new XOLEDDisplayClass(&display);
   displayMessages();
+
 }
 
 void loop() {
+  unsigned int now = millis();
   server.handleClient();
   refreshDisplay();
-  delay(10);
+  
+  if (now > every10s + 10000) {
+    every10s = millis();
+    gsm.getTime();
+  }
+  if (now > every500ms + 500) {
+    every500ms = millis();
+    gsm.checkGsm();
+  }
+  delay(20);
 }
 
 void printNumbers() {
@@ -145,7 +173,6 @@ void displayMessages( void )
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
   oledDisplay->setLine(1, message, false, true);
   oledDisplay->setLine(2, message);
-  oledDisplay->setLine(3, message);
 }
 
 void refreshDisplay(void) {
