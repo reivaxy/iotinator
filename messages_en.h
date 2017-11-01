@@ -11,6 +11,7 @@
 #define MSG_INIT_AP_SSID "Access Point SSID"
 #define MSG_INIT_AP_PWD "Access Point Password"
 
+#define MSG_INIT_ADMIN_REQUEST "Please set Admin"
 #define MSG_INIT_ADMIN_SET "Admin set"
 #define MSG_INIT_ADMIN_ALREADY_SET "Admin already set"
 #define MSG_OPENING_AP "Opening Access Point "

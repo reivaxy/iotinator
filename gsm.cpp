@@ -1,25 +1,59 @@
 
-
+#include <string>
+#include <Arduino.h>
 #include "gsm.h"
-#define MAX_MSG_LENGTH 300
+#define MAX_MSG_LENGTH 500
 
 // TODO fifo for gsm commands ??
 
 GsmClass::GsmClass(SoftwareSerial* serial) {
   _serialSIM800 = serial;
-  _serialSIM800->println("ATE 0");
-  _serialSIM800->println("AT+CLTS=1");
-  _serialSIM800->println("AT+COPS=0");
-  _serialSIM800->println("AT+COPS=2");
 };
+
+void GsmClass::init() {
+  _serialSIM800->println("ATE 0");        // No echo
+  _serialSIM800->println("AT+CMGF=1");    // Set Text mode (before connection ? check if ok)
+  delay(300);
+  _serialSIM800->println("AT+CLTS=1");
+  delay(500);
+  _serialSIM800->println("AT+COPS=0");
+  delay(500);
+  _serialSIM800->println("AT+COPS=2");
+  delay(500);
+}
 
 void GsmClass::getTime() {
   Serial.println("Get time from gsm");
   _serialSIM800->println("AT+CCLK?");
 }
+void GsmClass::checkNetwork() {
+  Serial.println("Check gsm network connection");
+  _serialSIM800->println("AT+CREG?");
+}
+void GsmClass::setConnectionHandler(void (*handler)(char *)) {
+  _setHandler("+CREG", handler);
+}
+void GsmClass::setClockHandler(void (*handler)(char *)) {
+  _setHandler("+CCLK", handler);
+}
+void GsmClass::_setHandler(const char* key, void (*handler)(char*)) {
+  _handlers[key] = handler;
+}
+
+void GsmClass::sendSMS(char* toNumber, char* message) {
+  Serial.print("Sending SMS to ");
+  Serial.println(toNumber);
+  _serialSIM800->println("AT+CSCS=\"GSM\"");
+  _serialSIM800->print("AT+CMGS=\"");
+  _serialSIM800->print(toNumber);
+  _serialSIM800->println("\"");
+  delay(200);  // Should we wait for the prompt ???
+  _serialSIM800->println(message);
+  _serialSIM800->print(26);
+  
+}
 
 void GsmClass::checkGsm() {
-  Serial.print("check gsm ");
   int incomingChar, length;
   char message[MAX_MSG_LENGTH];
   *message = 0;
@@ -41,5 +75,31 @@ void GsmClass::checkGsm() {
       }
     }
   }
-  Serial.println(message);
+  if(strlen(message) > 0) {
+    char resultId[10];
+    char resultValue[MAX_MSG_LENGTH + 1];
+    char *ptr = NULL;
+    
+    ptr = strstr(message, ": ");
+    if (ptr != NULL) {
+      *ptr = 0;
+      strcpy(resultId, message);
+      Serial.println(resultId);
+      ptr += 2;
+      strcpy(resultValue, ptr);     
+      Serial.println(resultValue);
+
+      if (_handlers.find(resultId) != _handlers.end()) {
+        _handlers[resultId](resultValue);
+      } else {
+        Serial.print("Unhandled response: ");
+        Serial.println(resultId);
+      }
+    }
+    
+    // If message is the result of CREG
+//    if (strncmp(message, "+CREG:", 6) == 0) {
+//      _connectionHandler(message);
+//    }
+  }
 }

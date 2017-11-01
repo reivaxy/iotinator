@@ -9,8 +9,8 @@
 #include "registeredPhoneNumber.h"
 #include "XEEPROMConfig.h"
 
-#define CONFIG_VERSION 2
-#define CONFIG_NAME "Iotinator"
+#define CONFIG_VERSION 3
+#define CONFIG_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
 #define DEFAULT_WEBAPP_HOST "http://www.iotinator.com/"
@@ -70,6 +70,7 @@ public:
   char* getApPwd(void);
   void setAdminNumber(char *number);
   void setAdminNumber(String numberString);
+  char* getAdminNumber();
   
   
 protected:

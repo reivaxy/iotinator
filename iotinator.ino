@@ -11,10 +11,11 @@
 //#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
+#include <stdio.h>
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
-#include "XOLEDDisplay.h"
+#include "Display.h"
 #include "gsm.h"
 
 #define TIME_STR_LENGTH 100
@@ -23,12 +24,12 @@
 #define SIM800_TX_PIN 13
 //SIM800 RX is connected to TX MCU 15 (D8)
 #define SIM800_RX_PIN 15
-SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 500);
+SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
 
 // Global object to store config
 masterConfigDataType masterConfigData;
 MasterConfigClass *config;
-XOLEDDisplayClass *oledDisplay;
+DisplayClass *oledDisplay;
 
 // I couldn't find a way to instanciate this in the XOLEDDisplay lib
 // and keep it working further than in the constructor...
@@ -36,14 +37,15 @@ SSD1306 display(0x3C, D5, D6);
 
 GsmClass gsm(&serialSIM800);
 
+#include "gsmMessageHandlers.h"
 //MDNSResponder mdns;
 ESP8266WebServer server(80);
 byte clientConnected = 0;
 boolean homeWifiConnected = false;
-unsigned every200ms = 0;
-unsigned every500ms = 0;
-unsigned every2s = 0;
-unsigned every10s = 0;
+unsigned elapsed200ms = 0;
+unsigned elapsed500ms = 0;
+unsigned elapsed2s = 0;
+unsigned elapsed10s = 0;
 
 void setup(){
   char timeStr[TIME_STR_LENGTH+1];
@@ -76,25 +78,34 @@ void setup(){
   printNumbers();
    
   // Initialise the OLED display
-  oledDisplay = new XOLEDDisplayClass(&display);
-  displayMessages();
-
+  oledDisplay = new DisplayClass(&display);
+  initMessages();
+  initGsmMessageHandlers();
 }
 
 void loop() {
   unsigned int now = millis();
+  // Check if any request to serve
   server.handleClient();
+  
+  // Display needs to be refreshed periodically to handle blinking
   refreshDisplay();
   
-  if (now > every10s + 10000) {
-    every10s = millis();
+  // refresh time   
+  if (now > elapsed10s + 10000) {
+    elapsed10s = millis();
     gsm.getTime();
+    gsm.checkNetwork();
   }
-  if (now > every500ms + 500) {
-    every500ms = millis();
+  
+  // Check gsm status, incoming SMS,
+  if (now > elapsed500ms + 500) {
+    elapsed500ms = millis();
     gsm.checkGsm();
   }
+  
   delay(20);
+  
 }
 
 void printNumbers() {
@@ -131,10 +142,14 @@ void printHomePage() {
           return;
         }
         config->setAdminNumber(adminNumber);
+        gsm.sendSMS(config->getAdminNumber(), "You are admin");  //
+        oledDisplay->setLine(2, ""); 
+        oledDisplay->setLine(2, MSG_INIT_ADMIN_SET, true, false); 
       }
       String apSsid = server.arg("apSsid");
       if (apSsid.length() > 0) {
         config->setApSsid(apSsid);
+        initSsidMsg();
       }
       String apPwd = server.arg("apPwd");
       if( apPwd.length() > 0) {
@@ -163,18 +178,33 @@ void sendPage(const char* msg, int code) {
   free(html); 
 }
 
-void displayMessages( void )
+void initMessages( void )
 {
   char message[100];
   oledDisplay->setTitle(config->getName());
-  sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
-  oledDisplay->setLine(0, message);  
+  initSsidMsg();
   IPAddress ipAddress = WiFi.softAPIP();
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
-  oledDisplay->setLine(1, message, false, true);
-  oledDisplay->setLine(2, message);
+  oledDisplay->setLine(1, message);
+  if(!config->getRegisteredPhone(0)->isAdmin()) {
+    oledDisplay->setLine(2, MSG_INIT_ADMIN_REQUEST);
+  }
+  oledDisplay->gsmIcon(true);
+  oledDisplay->clockIcon(true);
+  
 }
 
 void refreshDisplay(void) {
   oledDisplay->refresh();
+}
+
+void initSsidMsg() {
+  char message[100];
+  sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
+  bool blinkWifi = false;
+  if (strcmp(config->getApSsid(), DEFAULT_APSSID) == 0) {
+    blinkWifi = true;
+  }
+  oledDisplay->setLine(0, message); 
+  oledDisplay->wifiIcon(blinkWifi);
 }

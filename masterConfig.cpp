@@ -10,8 +10,6 @@
 #include "utils.h"
 
 MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(masterConfigDataType)) {
-  Serial.println("MasterConfigClass::MasterConfigClass");
-
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i] = new RegisteredPhoneNumberClass(&(_getConfigPtr()->registeredNumbers[i]));
@@ -24,7 +22,6 @@ MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, voi
  * NB: version and name are handled by base class 
  */
 void MasterConfigClass::initFromDefault() {
-  Serial.println("MasterConfigClass::initFromDefault");
   XEEPROMConfigClass::initFromDefault(); // handles version and name init
   
   // Reset all registered phone numbers
@@ -79,6 +76,9 @@ char* MasterConfigClass::getApPwd(void) {
 void MasterConfigClass::setAdminNumber(char *number) {
   _phoneNumbers[0]->setNumber(number);
   _phoneNumbers[0]->setAdmin(true);
+}
+char* MasterConfigClass::getAdminNumber() {
+  return _phoneNumbers[0]->getNumber();
 }
 
 void MasterConfigClass::setAdminNumber(String numberString) {
