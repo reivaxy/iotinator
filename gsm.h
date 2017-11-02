@@ -17,13 +17,15 @@ public:
  
   void setConnectionHandler(void (*handler)(char *));
   void setClockHandler(void (*handler)(char *));
+  void setSmsReceivedHandler(void (*handler)(char *));
+  
   void init();
   void sendSMS(char* toNumber, char* message);
+  void setHandler(const char* key, void (*)(char*));
   
 protected:
   SoftwareSerial* _serialSIM800;
   void (*_connectionHandler)(char *);
   unsigned int _disconnectionTime = 0;
-  void _setHandler(const char* key, void (*)(char*));
   std::map <std::string, void (*)(char*)> _handlers;   
 };

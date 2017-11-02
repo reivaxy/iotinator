@@ -20,6 +20,7 @@
 
 #define TIME_STR_LENGTH 100
 
+
 //SIM800 TX is connected to RX MCU 13 (D7)
 #define SIM800_TX_PIN 13
 //SIM800 RX is connected to TX MCU 15 (D8)
@@ -67,6 +68,7 @@ void setup(){
     config->initFromDefault();
     config->saveToEeprom();
     sendPage("Reset Done", 200);
+    gsm.sendSMS(config->getAdminNumber(), "Reset done");  //
   });
   
   Serial.print(MSG_OPENING_AP);
@@ -81,6 +83,10 @@ void setup(){
   oledDisplay = new DisplayClass(&display);
   initMessages();
   initGsmMessageHandlers();
+  
+  unsigned int now = millis();
+  elapsed10s = now;
+   gsm.init();
 }
 
 void loop() {
@@ -187,10 +193,10 @@ void initMessages( void )
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
   oledDisplay->setLine(1, message);
   if(!config->getRegisteredPhone(0)->isAdmin()) {
-    oledDisplay->setLine(2, MSG_INIT_ADMIN_REQUEST);
+    oledDisplay->setLine(2, MSG_INIT_ADMIN_REQUEST, NOT_TRANSIENT, BLINKING);
   }
-  oledDisplay->gsmIcon(true);
-  oledDisplay->clockIcon(true);
+  oledDisplay->gsmIcon(BLINKING);
+  oledDisplay->clockIcon(BLINKING);
   
 }
 

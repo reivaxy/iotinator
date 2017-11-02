@@ -25,3 +25,11 @@ void DisplayClass::gsmIcon(bool blink) {
 void DisplayClass::roamingIcon(bool blink) {
   setIcon(3, 73, blink);
 }
+void DisplayClass::refreshDateTime(char* dateTime) {
+  // If icon 0 is showing the clock, delete it.
+  if (getIconChar(0) == 75) {
+    setIcon(0, BLANK_ICON); // Hide clock icon
+  }
+
+  setLine(4, dateTime);  // Display time
+}
