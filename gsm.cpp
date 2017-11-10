@@ -2,7 +2,12 @@
 #include <string>
 #include <Arduino.h>
 #include "gsm.h"
+#include "utils.h"
 #define MAX_MSG_LENGTH 500
+
+#define CHECK_NETWORK_PERIOD 15000 // 15 seconds
+#define CHECK_TIME_PERIOD 15000    // 15 seconds
+#define CHECK_SMS_PERIOD 15000     // 15 seconds
 
 // TODO fifo for gsm commands ??
 
@@ -22,11 +27,24 @@ void GsmClass::init() {
   delay(500);
 }
 
-void GsmClass::getTime() {
+void GsmClass::refresh() {
+  unsigned now = millis();
+  if(isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
+    _checkConnection();
+  }
+  if(isElapsedDelay(now, &_lastCheckTime, CHECK_TIME_PERIOD)) {
+    _getTime();
+  }
+  checkGsm();
+}
+
+void GsmClass::_getTime() {
   Serial.println("Get time from gsm");
   _serialSIM800->println("AT+CCLK?");
 }
-void GsmClass::checkNetwork() {
+
+// TODO: this should be called and handled internally, periodically
+void GsmClass::_checkConnection() {
   Serial.println("Check gsm network connection");
   _serialSIM800->println("AT+CREG?");
 }
@@ -41,8 +59,9 @@ void GsmClass::setSmsReceivedHandler(void (*handler)(char *)) {
 }
 
 void GsmClass::setHandler(const char* key, void (*handler)(char*)) {
-  _handlers[key] = handler;
+  _handlers.insert(handlerPair((char *)key, (void (*)(char*))handler ));
 }
+
 
 void GsmClass::sendSMS(char* toNumber, char* message) {
   Serial.print("Sending SMS to ");
@@ -93,10 +112,18 @@ void GsmClass::checkGsm() {
       ptr += 2;
       strcpy(resultValue, ptr);     
       Serial.println(resultValue);
+      
+      std::pair<handlerMap::iterator, handlerMap::iterator> range;
+      range = _handlers.equal_range(resultId); // get iterators on entries with key value resultId
+      bool found = false;  
+      for(handlerMap::iterator it = range.first; it != range.second; ++it) {
+        Serial.print("Found handler for ");
+        Serial.println(resultId);
+        it->second(resultValue);
+        found = true;
+      }
 
-      if (_handlers.find(resultId) != _handlers.end()) {
-        _handlers[resultId](resultValue);
-      } else {
+      if (!found) {
         Serial.print("Unhandled response: ");
         Serial.println(resultId);
       }

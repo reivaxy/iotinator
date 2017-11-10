@@ -43,10 +43,10 @@ GsmClass gsm(&serialSIM800);
 ESP8266WebServer server(80);
 byte clientConnected = 0;
 boolean homeWifiConnected = false;
-unsigned elapsed200ms = 0;
-unsigned elapsed500ms = 0;
-unsigned elapsed2s = 0;
-unsigned elapsed10s = 0;
+unsigned long elapsed200ms = 0;
+unsigned long elapsed500ms = 0;
+unsigned long elapsed2s = 0;
+unsigned long elapsed10s = 0;
 
 void setup(){
   char timeStr[TIME_STR_LENGTH+1];
@@ -84,32 +84,23 @@ void setup(){
   initMessages();
   initGsmMessageHandlers();
   
-  unsigned int now = millis();
+  unsigned long now = millis();
   elapsed10s = now;
-   gsm.init();
+  gsm.init();
 }
 
 void loop() {
-  unsigned int now = millis();
+  unsigned long now = millis();
   // Check if any request to serve
   server.handleClient();
   
   // Display needs to be refreshed periodically to handle blinking
-  refreshDisplay();
+  oledDisplay->refresh();
   
-  // refresh time   
-  if (now > elapsed10s + 10000) {
-    elapsed10s = millis();
-    gsm.getTime();
-    gsm.checkNetwork();
-  }
-  
-  // Check gsm status, incoming SMS,
-  if (now > elapsed500ms + 500) {
-    elapsed500ms = millis();
-    gsm.checkGsm();
-  }
-  
+  // Let gsm do its tasks: checking connection, incomming messages, 
+  // handler notifications...
+  gsm.refresh();   
+ 
   delay(20);
   
 }
@@ -198,10 +189,6 @@ void initMessages( void )
   oledDisplay->gsmIcon(BLINKING);
   oledDisplay->clockIcon(BLINKING);
   
-}
-
-void refreshDisplay(void) {
-  oledDisplay->refresh();
 }
 
 void initSsidMsg() {

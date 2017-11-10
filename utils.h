@@ -5,5 +5,5 @@
  */
 #pragma once
  
-bool checkElapsedDelay(unsigned long now, unsigned long lastTime, unsigned long delay);
+bool isElapsedDelay(unsigned long now, unsigned long* lastTime, unsigned long delay);
 void safeStringCopy(char* to, const char* from, unsigned int length);

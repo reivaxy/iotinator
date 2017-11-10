@@ -7,8 +7,8 @@
 #include <Arduino.h>
  
 // return true if current time is after given time + delay
-bool checkElapsedDelay(unsigned long now, unsigned long lastTime, unsigned long delay) {
-  unsigned long elapsed = now - lastTime;
+bool isElapsedDelay(unsigned long now, unsigned long* lastTime, unsigned long delay) {
+  unsigned long elapsed = now - *lastTime;
   bool result = false;
   // millis() overflows unsigned long after about 50 days => 0  but since unsigned,
   // no problem !
@@ -17,6 +17,9 @@ bool checkElapsedDelay(unsigned long now, unsigned long lastTime, unsigned long 
   }
   if(lastTime == 0) {
     result = true;
+  }
+  if(result) {
+    *lastTime = now;
   }
   return result;
 }
