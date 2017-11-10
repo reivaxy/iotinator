@@ -8,7 +8,9 @@ It runs on esp8266 hardware (Investigating esp32 hardware too), connected to a S
 
 It connects to a domestic Wifi network and exposes a "private" Wifi network to communicate with slave modules.
 
-It defines APIs to communicate with module, and serves as forwards SMS to them, and sends their responses back.
+It defines APIs to communicate with the modules, and dispatches and forwards SMS to them, and sends their responses back.
+
+It also provides an API so that modules can record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
 
 Configuration is persisted in EEPROM.
 
