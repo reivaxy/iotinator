@@ -4,6 +4,9 @@
 #include <Arduino.h>
 #include <map>
 #include <string>
+#undef max  // Because Arduino.h and queue are not compatible otherwise
+#undef min  // Because Arduino.h and queue are not compatible otherwise
+#include <queue>
 
 enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, NEW_SMS, TIMEOUT};
 
@@ -22,7 +25,7 @@ public:
   void refresh();
   void sendSMS(char* toNumber, char* message);
   void setHandler(GsmEvents event, void (*)(char*));
-  
+  void sendCmd(char* cmd);
 protected:
   void _connectionTimeOutHandler(char *message);
   void _checkConnection();
@@ -36,5 +39,7 @@ protected:
   unsigned long _lastCheckSms = 0;
   bool _isConnected = false;
   bool _timeisValid = false;
-     
+  
+  std::queue<char*> _cmds;
+  bool _waitingForCmdResult = false;   
 };
