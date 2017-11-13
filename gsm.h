@@ -5,8 +5,10 @@
 #include <map>
 #include <string>
 
-typedef std::multimap <std::string, void (*)(char*)>  handlerMap;
-typedef std::pair <std::string, void (*)(char*)>  handlerPair;
+enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, NEW_SMS, TIMEOUT};
+
+typedef std::multimap <GsmEvents, void (*)(char*)>  handlerMap;
+typedef std::pair <GsmEvents, void (*)(char*)>  handlerPair;
 
 
 class GsmClass {
@@ -15,15 +17,11 @@ public:
   
   void initTimeFromNetwork();
   void checkGsm();
- 
-  void setConnectionHandler(void (*handler)(char *));
-  void setClockHandler(void (*handler)(char *));
-  void setSmsReceivedHandler(void (*handler)(char *));
   
   void init();
   void refresh();
   void sendSMS(char* toNumber, char* message);
-  void setHandler(const char* key, void (*)(char*));
+  void setHandler(GsmEvents event, void (*)(char*));
   
 protected:
   void _connectionTimeOutHandler(char *message);

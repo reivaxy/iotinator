@@ -1,12 +1,13 @@
 
+
 void connectionHandler(char *message) {
-  if (strstr(message, "0,5")) {
-    oledDisplay->roamingIcon(false);
-  } else if (strstr(message, "0,1")) {
-    oledDisplay->gsmIcon(false);
-  } else {
-    oledDisplay->gsmIcon(true); // blinking icon : not connected
-  }
+  oledDisplay->gsmIcon(false);
+}
+void connectionRoamingHandler(char *message) {
+  oledDisplay->roamingIcon(false);
+}
+void disconnectionHandler(char *message) {
+  oledDisplay->gsmIcon(true); // blinking icon : not connected
 }
 
 void clockHandler(char *message) {
@@ -25,7 +26,11 @@ void smsReceivedHandler(char *message) {
 }
 
 void initGsmMessageHandlers() {
-  gsm.setConnectionHandler(connectionHandler);
+  gsm.setHandler(CONNECTION, connectionHandler);
+  gsm.setHandler(CONNECTION_ROAMING, connectionRoamingHandler);
+  gsm.setHandler(DISCONNECTION, disconnectionHandler);
+  /*
   gsm.setClockHandler(clockHandler);
   gsm.setSmsReceivedHandler(smsReceivedHandler);
+  */
 }

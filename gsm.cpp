@@ -9,8 +9,11 @@
 #define CHECK_TIME_PERIOD 15000    // 15 seconds
 #define CHECK_SMS_PERIOD 15000     // 15 seconds
 
-// TODO fifo for gsm commands ??
+#define TIME_OUT CHECK_NETWORK_PERIOD*3 // X seconds with no answer from SIM800. Needs to be more than check period!
 
+unsigned long lastAnswer = 0;
+
+// TODO fifo for gsm commands ??
 GsmClass::GsmClass(SoftwareSerial* serial) {
   _serialSIM800 = serial;
 };
@@ -48,18 +51,8 @@ void GsmClass::_checkConnection() {
   Serial.println("Check gsm network connection");
   _serialSIM800->println("AT+CREG?");
 }
-void GsmClass::setConnectionHandler(void (*handler)(char *)) {
-  setHandler("+CREG", handler);
-}
-void GsmClass::setClockHandler(void (*handler)(char *)) {
-  setHandler("+CCLK", handler);
-}
-void GsmClass::setSmsReceivedHandler(void (*handler)(char *)) {
-  setHandler("+CMTI", handler);
-}
-
-void GsmClass::setHandler(const char* key, void (*handler)(char*)) {
-  _handlers.insert(handlerPair((char *)key, (void (*)(char*))handler ));
+void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
+  _handlers.insert(handlerPair((GsmEvents)event, (void (*)(char*))handler ));
 }
 
 
@@ -79,7 +72,11 @@ void GsmClass::sendSMS(char* toNumber, char* message) {
 void GsmClass::checkGsm() {
   int incomingChar, length;
   char message[MAX_MSG_LENGTH];
+  GsmEvents gsmEvent = NONE;
   *message = 0;
+  char resultValue[MAX_MSG_LENGTH + 1];
+  resultValue[0] = 0;
+  
   while(_serialSIM800->available()){    
     incomingChar = _serialSIM800->read();
     if(incomingChar > 0) {
@@ -101,7 +98,6 @@ void GsmClass::checkGsm() {
   if(strlen(message) > 0) {
     Serial.println(message);
     char resultId[10];
-    char resultValue[MAX_MSG_LENGTH + 1];
     char *ptr = NULL;
     
     ptr = strstr(message, ": ");
@@ -113,25 +109,49 @@ void GsmClass::checkGsm() {
       strcpy(resultValue, ptr);     
       Serial.println(resultValue);
       
-      std::pair<handlerMap::iterator, handlerMap::iterator> range;
-      range = _handlers.equal_range(resultId); // get iterators on entries with key value resultId
-      bool found = false;  
-      for(handlerMap::iterator it = range.first; it != range.second; ++it) {
-        Serial.print("Found handler for ");
-        Serial.println(resultId);
-        it->second(resultValue);
-        found = true;
+      // If message is the result of CREG: connection status
+      if (strncmp(resultId, "+CREG", 5) == 0) {
+        lastAnswer = millis();
+        if (strstr(resultValue, "0,5")) {
+          gsmEvent = CONNECTION_ROAMING;
+        } else if (strstr(resultValue, "0,1")) {
+          gsmEvent = CONNECTION;
+        } else {
+          gsmEvent = DISCONNECTION;
+        }      
       }
 
-      if (!found) {
-        Serial.print("Unhandled response: ");
-        Serial.println(resultId);
+      // If message is the result of CCLK: get time result
+      if (strncmp(resultId, "+CCLK", 5) == 0) {
+        // when datetime is not yet initialised it defaults to "04/01/01..." at least in my SIM module     
+        if (resultValue[1] == '0') {    // 1 because double quote is 0
+          gsmEvent = DATETIME_NOK;
+        } else {
+          gsmEvent = DATETIME_OK;
+        }     
       }
     }
-    
-    // If message is the result of CREG
-//    if (strncmp(message, "+CREG:", 6) == 0) {
-//      _connectionHandler(message);
-//    }
   }
+      
+  if (millis() - lastAnswer > CHECK_NETWORK_PERIOD) {
+    gsmEvent = TIMEOUT;
+    lastAnswer = millis(); // To not process at each gsmRefresh
+  }
+ 
+  if (gsmEvent != NONE) {      
+    std::pair<handlerMap::iterator, handlerMap::iterator> range;
+    range = _handlers.equal_range(gsmEvent); // get iterators on entries with key value gsmEvent
+    bool found = false;  
+    for(handlerMap::iterator it = range.first; it != range.second; ++it) {
+      Serial.print("Found handler for ");
+      Serial.println(gsmEvent);
+      it->second(resultValue);
+      found = true;
+    }
+
+    if (!found) {
+      Serial.print("Unhandled event: ");
+      Serial.println(gsmEvent);
+    }
+  }    
 }
