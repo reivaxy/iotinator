@@ -17,8 +17,10 @@ void clockHandler(char *message) {
   strcpy(timeMsg, ++message);
   timeMsg[8] = ' ';
   timeMsg[14] = 0;
-  oledDisplay->refreshDateTime(timeMsg);  // Display time
-  
+  oledDisplay->refreshDateTime(timeMsg);  // Display time 
+}
+void clockLostHandler(char *message) {
+  oledDisplay->blinkDateTime(true);  // Display time 
 }
 
 void smsReceivedHandler(char *message) {
@@ -29,8 +31,9 @@ void initGsmMessageHandlers() {
   gsm.setHandler(CONNECTION, connectionHandler);
   gsm.setHandler(CONNECTION_ROAMING, connectionRoamingHandler);
   gsm.setHandler(DISCONNECTION, disconnectionHandler);
+  gsm.setHandler(DATETIME_OK, clockHandler);
+  gsm.setHandler(DATETIME_NOK, clockLostHandler);
   /*
-  gsm.setClockHandler(clockHandler);
   gsm.setSmsReceivedHandler(smsReceivedHandler);
   */
 }

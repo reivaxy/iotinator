@@ -20,4 +20,5 @@ public:
   void gsmIcon(bool blink);
   void roamingIcon(bool blink);
   void refreshDateTime(char *dateTime);
+  void blinkDateTime(bool blink);
 };

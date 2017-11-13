@@ -30,6 +30,9 @@ void DisplayClass::refreshDateTime(char* dateTime) {
   if (getIconChar(0) == 75) {
     setIcon(0, BLANK_ICON); // Hide clock icon
   }
+  setLine(4, dateTime, false, false);  // Display time not blinking
+}
 
-  setLine(4, dateTime);  // Display time
+void DisplayClass::blinkDateTime(bool blink) {
+  blinkLine(4, true); // blink time
 }
