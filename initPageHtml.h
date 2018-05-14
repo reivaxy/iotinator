@@ -8,12 +8,21 @@
 
 char initPage[] = "\
 <html title='iotinator'>\
-<body>\
+<head>\
+<style>\
+body.noGsm .ifGsm {\
+  display:none;\
+}\
+</style>\
+</head>\
+<body class='%s'>\
 <h1>" MSG_INIT_WELCOME "</h1>\
 <form action='/init' method='post'>\
-  <input name='admin' type='text' placeholder='" MSG_INIT_ADMIN_PHONE_NUMBER "'/><br/>\
+  <input class='ifGsm' name='admin' type='text' placeholder='" MSG_INIT_ADMIN_PHONE_NUMBER "'/><br/>\
   <input name='apSsid' type='text' placeholder='" MSG_INIT_AP_SSID "'/><br/>\
   <input name='apPwd' type='text' placeholder='" MSG_INIT_AP_PWD "'/><br/>\
+  <input name='homeSsid' type='text' placeholder='" MSG_INIT_HOME_SSID "'/><br/>\
+  <input name='homePwd' type='text' placeholder='" MSG_INIT_HOME_PWD "'/><br/>\
   <input type='submit'/>\
 </form>\
 </body>\

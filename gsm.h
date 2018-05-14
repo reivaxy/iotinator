@@ -1,5 +1,7 @@
 #pragma once
 
+#define DISABLE_GSM true
+
 #include <SoftwareSerial.h>
 #include <Arduino.h>
 #include <map>
@@ -21,11 +23,11 @@ public:
   void initTimeFromNetwork();
   void checkGsm();
   
-  void init();
+  bool init();
   void refresh();
-  void sendSMS(char* toNumber, char* message);
+  void sendSMS(char* toNumber, const char* message);
   void setHandler(GsmEvents event, void (*)(char*));
-  void sendCmd(char* cmd);
+  void sendCmd(const char* cmd);
 protected:
   void _connectionTimeOutHandler(char *message);
   void _checkConnection();

@@ -9,7 +9,7 @@
 #include "registeredPhoneNumber.h"
 #include "XEEPROMConfig.h"
 
-#define CONFIG_VERSION 3
+#define CONFIG_VERSION 0
 #define CONFIG_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
@@ -59,15 +59,19 @@ public:
   void addPhone(const char*);
   
   void setHomeSsid(const char* ssid);
+  void setHomeSsid(String ssid);
   void setHomePwd(const char* pwd);
+  void setHomePwd(String pwd);
   void setApSsid(const char* ssid);
-  void setApPwd(const char* pwd);
   void setApSsid(String ssid);
+  void setApPwd(const char* pwd);
   void setApPwd(String pwd);
   char* getHomeSsid(void);
   char* getHomePwd(void);
   char* getApSsid(void);
   char* getApPwd(void);
+  bool homeWifiConfigured(void);
+  bool isInitialized(void);
   void setAdminNumber(char *number);
   void setAdminNumber(String numberString);
   char* getAdminNumber();

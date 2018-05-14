@@ -18,25 +18,32 @@ GsmClass::GsmClass(SoftwareSerial* serial) {
   _serialSIM800 = serial;
 };
 
-void GsmClass::init() {
+bool GsmClass::init() {
+  if (DISABLE_GSM) {
+    Serial.println("GSM disabled.");
+    return false;
+  }
   //sendCmd("ATE 0");      // No echo
-  sendCmd("AT+CMGF=1");    // Set Text mode (before connection ? check if ok)
+  sendCmd("AT+CMGF=10");    // Set Text mode (before connection ? check if ok)
   sendCmd("AT+CLTS=1");    // Get local time stamp
   sendCmd("AT+COPS=0");    // Disconnect
   sendCmd("AT+COPS=2");    // Connect
+  return true;
 }
 
 /**
  * Push a new command in the command queue
  *
  */ 
-void GsmClass::sendCmd(char* cmd) {
+void GsmClass::sendCmd(const char* cmd) {
+  if (DISABLE_GSM) return;
   char* newCmd = (char *)malloc(strlen(cmd) + 1);
   strcpy(newCmd, cmd);
   _cmds.push(newCmd);
 }
 
 void GsmClass::refresh() {
+  if (DISABLE_GSM) return;
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
   if(isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
@@ -59,33 +66,40 @@ void GsmClass::refresh() {
 }
 
 void GsmClass::_getTime() {
+  if (DISABLE_GSM) return;
   Serial.println("Get time from gsm");
   sendCmd("AT+CCLK?");
 }
 
 // TODO: this should be called and handled internally, periodically
 void GsmClass::_checkConnection() {
+  if (DISABLE_GSM) return;
   Serial.println("Check gsm network connection");
   sendCmd("AT+CREG?");
 }
 void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
+  if (DISABLE_GSM) return;
   _handlers.insert(handlerPair((GsmEvents)event, (void (*)(char*))handler ));
 }
 
-void GsmClass::sendSMS(char* toNumber, char* message) {
+void GsmClass::sendSMS(char* toNumber, const char* msg) {
+  if (DISABLE_GSM) return;
+  char message[MAX_MSG_LENGTH + 1];
   Serial.print("Sending SMS to ");
   Serial.println(toNumber);
   char sendToNum[50];
   sendCmd("AT+CSCS=\"GSM\"");
   sprintf(sendToNum, "AT+CMGS=\"%s\"", toNumber);
   sendCmd(sendToNum);
+  strncpy(message, msg, MAX_MSG_LENGTH);
   strcat(message, "\x1A");
   sendCmd(message); 
 }
 
 void GsmClass::checkGsm() {
+  if (DISABLE_GSM) return;
   int incomingChar, length;
-  char message[MAX_MSG_LENGTH];
+  char message[MAX_MSG_LENGTH + 1];
   GsmEvents gsmEvent = NONE;
   *message = 0;
   char resultValue[MAX_MSG_LENGTH + 1];

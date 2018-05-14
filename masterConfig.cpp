@@ -41,9 +41,20 @@ void MasterConfigClass::initFromDefault() {
 void MasterConfigClass::setHomeSsid(const char* ssid) {
   safeStringCopy(_getConfigPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
 }
+void MasterConfigClass::setHomeSsid(String ssidString) {
+  char ssid[SSID_MAX_LENGTH];
+  ssidString.toCharArray(ssid, (unsigned int)SSID_MAX_LENGTH);
+  setHomeSsid(ssid);
+}
 void MasterConfigClass::setHomePwd(const char* pwd) {
   safeStringCopy(_getConfigPtr()->homePwd, pwd, PWD_MAX_LENGTH);
 }
+void MasterConfigClass::setHomePwd(String pwdString) {
+  char pwd[PWD_MAX_LENGTH];
+  pwdString.toCharArray(pwd, (unsigned int)PWD_MAX_LENGTH);
+  setHomePwd(pwd);
+}
+
 void MasterConfigClass::setApSsid(const char* ssid) {
   safeStringCopy(_getConfigPtr()->apSsid, ssid, SSID_MAX_LENGTH);
 }
@@ -87,6 +98,20 @@ void MasterConfigClass::setAdminNumber(String numberString) {
   setAdminNumber(number);
 }
 
+
+bool MasterConfigClass::homeWifiConfigured() {
+  if(getHomeSsid() != 0) {
+    return true;
+  }
+  return false;
+}
+
+bool MasterConfigClass::isInitialized() {
+  if(strcmp(getApPwd(), DEFAULT_APPWD) != 0) {
+    return true;
+  }
+  return false;
+}
 /**
  * Return the phoneNumber object stored at a given offset
  *

@@ -5,10 +5,10 @@
  */
  
 #include <EEPROM.h>
-//#include <ESP8266WiFi.h>
-//#include <WiFiClient.h>
-//#include <ESP8266HTTPClient.h>
-//#include <ESP8266mDNS.h>
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266HTTPClient.h>
+#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <stdio.h>
@@ -16,29 +16,27 @@
 #include "initPageHtml.h"
 #include "masterConfig.h"
 #include "Display.h"
-#include "gsm.h"
 
 #define TIME_STR_LENGTH 100
-
-
-//SIM800 TX is connected to RX MCU 13 (D7)
-#define SIM800_TX_PIN 13
-//SIM800 RX is connected to TX MCU 15 (D8)
-#define SIM800_RX_PIN 15
-SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
 
 // Global object to store config
 masterConfigDataType masterConfigData;
 MasterConfigClass *config;
 DisplayClass *oledDisplay;
 
+#include "gsm.h"
+//SIM800 TX is connected to RX MCU 13 (D7)
+#define SIM800_TX_PIN 13
+//SIM800 RX is connected to TX MCU 15 (D8)
+#define SIM800_RX_PIN 15
+SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
+GsmClass gsm(&serialSIM800);
+#include "gsmMessageHandlers.h"
+
 // I couldn't find a way to instanciate this in the XOLEDDisplay lib
 // and keep it working further than in the constructor...
 SSD1306 display(0x3C, D5, D6);
 
-GsmClass gsm(&serialSIM800);
-
-#include "gsmMessageHandlers.h"
 //MDNSResponder mdns;
 ESP8266WebServer server(80);
 byte clientConnected = 0;
@@ -47,6 +45,8 @@ unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
 unsigned long elapsed2s = 0;
 unsigned long elapsed10s = 0;
+bool gsmEnabled = false;
+MDNSResponder mdns;
 
 void setup(){
   char timeStr[TIME_STR_LENGTH+1];
@@ -60,6 +60,7 @@ void setup(){
   server.on("/", [](){
     Serial.println("Rq on /");
     printHomePage();
+    ping();
   });
 
   // TODO: remove this !!! Needed during dev
@@ -68,14 +69,20 @@ void setup(){
     config->initFromDefault();
     config->saveToEeprom();
     sendPage("Reset Done", 200);
-    gsm.sendSMS(config->getAdminNumber(), "Reset done");  //
+    gsm.sendSMS(config->getAdminNumber(), "Reset done");  //   
   });
   
-  Serial.print(MSG_OPENING_AP);
+  Serial.print(MSG_WIFI_OPENING_AP);
   Serial.println(config->getApSsid());
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(config->getApSsid(), config->getApPwd());
   Serial.println(WiFi.softAPIP());
+  
+  if(config->homeWifiConfigured()) {
+    Serial.print(MSG_WIFI_CONNECTING_HOME);
+    Serial.println(config->getHomeSsid());
+    WiFi.begin(config->getHomeSsid(), config->getHomePwd());
+  }  
   server.begin();
   printNumbers();
    
@@ -86,14 +93,26 @@ void setup(){
   
   unsigned long now = millis();
   elapsed10s = now;
-  gsm.init();
+  gsmEnabled = gsm.init();
 }
 
 void loop() {
   unsigned long now = millis();
   // Check if any request to serve
   server.handleClient();
-  
+  int wifiStatus = WiFi.status();
+  if (wifiStatus == WL_CONNECTED) {
+    if(!homeWifiConnected) {
+      Serial.println("Home wifi connected");
+      ping();
+    }
+    homeWifiConnected = true;
+  } else {
+    if(homeWifiConnected) {
+      Serial.println("Home wifi disconnected");
+    }
+    homeWifiConnected = false;
+  }
   // Display needs to be refreshed periodically to handle blinking
   oledDisplay->refresh();
   
@@ -103,6 +122,24 @@ void loop() {
  
   delay(20);
   
+}
+
+
+// Temp, for tests
+void ping() {
+  Serial.println("Ping");
+  Serial.println(config->getHomeSsid());
+  Serial.println(WiFi.localIP());
+  WiFiClient client;
+
+  HTTPClient http;
+  http.begin("http://c-est-simple.com/cgi-bin/webdistrib.cgi?toto=1");
+  http.addHeader("Content-Type", "multipart/form-data");
+  // doc on payload format: https://docs.internetofthings.ibmcloud.com/messaging/payload.html
+  int httpCode = http.GET();   // Log stuff to Serial ?
+  Serial.print("HTTP code: ");
+  Serial.println(httpCode);
+  http.end();
 }
 
 void printNumbers() {
@@ -116,19 +153,25 @@ void printNumbers() {
 }
 
 void printHomePage() {
-  // If admin phone number is not defined, print page to define it
-  if (config->getRegisteredPhone(0)->isAdmin()) {
-    Serial.println("Admin set Page");
-    sendPage(MSG_INIT_ADMIN_ALREADY_SET, 200);
+  // If init already done, display page saying so, otherwise display init page
+  // TODO Disabled for now
+  if (false && config->isInitialized()) {
+    Serial.println("Init done Page");
+    sendPage(MSG_INIT_ALREADY_DONE, 200);
   } else {
-    server.send(200, "text/html", initPage);
+  
+    char *page = (char *)malloc(strlen(initPage) + 10);
+    sprintf(page, initPage, gsmEnabled ? "": "noGsm");
+    server.send(200, "text/html", page);
+    free(page);
     server.on("/init", [](){
       Serial.println("Rq on /init");
-      if(config->getRegisteredPhone(0)->isAdmin()) {
-        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
-        return;
-      }
-      if (!server.hasArg("admin")) {
+//      if(config->isInitialized()) {
+//        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
+//        return;
+//      }
+      
+      if (!server.hasArg("apSsid")) {
         sendPage(MSG_ERR_BAD_REQUEST, 403);
         return;
       }
@@ -141,13 +184,18 @@ void printHomePage() {
         config->setAdminNumber(adminNumber);
         gsm.sendSMS(config->getAdminNumber(), "You are admin");  //
         oledDisplay->setLine(2, ""); 
-        oledDisplay->setLine(2, MSG_INIT_ADMIN_SET, true, false); 
+        oledDisplay->setLine(2, MSG_INIT_DONE, true, false); 
       }
+      
+      // TODO: add checks in the config methods
+      // Read and save new AP SSID 
       String apSsid = server.arg("apSsid");
       if (apSsid.length() > 0) {
+        // TODO: add checks
         config->setApSsid(apSsid);
         initSsidMsg();
       }
+      // Read and save new AP PWD 
       String apPwd = server.arg("apPwd");
       if( apPwd.length() > 0) {
         // Password need to be at least 8 characters
@@ -157,12 +205,39 @@ void printHomePage() {
         }
         config->setApPwd(apPwd);
       }
+            
+      // Read and save home SSID 
+      String homeSsid = server.arg("homeSsid");
+      if (homeSsid.length() > 0) {
+        config->setHomeSsid(homeSsid);
+      }
+      // Read and save home PWD 
+      String homePwd = server.arg("homePwd");
+      if( homePwd.length() > 0) {
+        // Password need to be at least 8 characters
+        if(homePwd.length() < 8) {
+          sendPage(MSG_ERR_PASSWORD_LENGTH, 403);
+          return;
+        }
+        config->setHomePwd(homePwd);
+      }
+      
+      
       // TODO: when GSM connected, send code, display confirmation page, 
       // and save once code confirmed
       // in the meantime, just save
       config->saveToEeprom();
+      
+      // New Access Point
+      WiFi.mode(WIFI_AP_STA);
+      WiFi.softAP(config->getApSsid(), config->getApPwd());
+      if(config->homeWifiConfigured()) {
+        WiFi.begin(config->getHomeSsid(), config->getHomePwd());
+      }
+      
       printNumbers();
-      sendPage("Admin set", 200);
+      sendPage(MSG_INIT_DONE, 200);
+      
     });     
   }
 }
@@ -183,10 +258,10 @@ void initMessages( void )
   IPAddress ipAddress = WiFi.softAPIP();
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
   oledDisplay->setLine(1, message);
-  if(!config->getRegisteredPhone(0)->isAdmin()) {
-    oledDisplay->setLine(2, MSG_INIT_ADMIN_REQUEST, NOT_TRANSIENT, BLINKING);
-  }
-  oledDisplay->gsmIcon(BLINKING);
+  if(!config->isInitialized()) {
+    oledDisplay->setLine(2, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
+  } 
+  if(gsmEnabled) oledDisplay->gsmIcon(BLINKING);  
   oledDisplay->clockIcon(BLINKING);
   
 }
