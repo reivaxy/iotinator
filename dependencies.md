@@ -8,3 +8,5 @@ git@github.com:ThingPulse/esp8266-oled-ssd1306.git
 
 http://www.arduino.cc/en/Reference/Ethernet
 
+NtpClientLib by German Martin 2.5.0
+Time by Michael Margoli1.5.0

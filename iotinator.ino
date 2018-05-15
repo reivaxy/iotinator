@@ -12,6 +12,8 @@
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <stdio.h>
+#include <TimeLib.h>
+#include <NtpClientLib.h>
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
@@ -39,24 +41,99 @@ SSD1306 display(0x3C, D5, D6);
 
 //MDNSResponder mdns;
 ESP8266WebServer server(80);
-byte clientConnected = 0;
 boolean homeWifiConnected = false;
+boolean ntpServerInitialized = false;
 unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
 unsigned long elapsed2s = 0;
-unsigned long elapsed10s = 0;
 bool gsmEnabled = false;
 MDNSResponder mdns;
+time_t timeNow = 0; 
+time_t timeLast = 0;
+// Handlers will work as long as these variables exists. 
+static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
+                        stationConnectedHandler, stationDisconnectedHandler ;
 
 void setup(){
-  char timeStr[TIME_STR_LENGTH+1];
-  int result;
   Serial.begin(9600);
   delay(100);
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME, (void*)&masterConfigData);
   config->init();
   Serial.println(config->getName());
+  setupServer();
   
+  WiFi.mode(WIFI_AP);
+  
+  if(config->homeWifiConfigured()) {
+    WiFi.mode(WIFI_AP_STA);
+    Serial.print(MSG_WIFI_CONNECTING_HOME);
+    Serial.println(config->getHomeSsid());
+    WiFi.begin(config->getHomeSsid(), config->getHomePwd());
+  }  
+  Serial.print(MSG_WIFI_OPENING_AP);
+  Serial.println(config->getApSsid());
+  WiFi.softAP(config->getApSsid(), config->getApPwd());
+  Serial.println(WiFi.softAPIP());
+  stationConnectedHandler  = WiFi.onSoftAPModeStationConnected(&onStationConnected);
+  stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+  
+  printNumbers();
+   
+  // Initialise the OLED display
+  oledDisplay = new DisplayClass(&display);
+  initDisplay();
+  
+  initGsmMessageHandlers();
+  gsmEnabled = gsm.init();
+  
+  wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
+  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected); 
+}
+
+void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
+  Serial.println("Station connected.");
+}
+
+void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
+  Serial.println("Station disconnected.");
+}
+
+// Called when STA is connected to home wifi and IP was obtained
+void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
+  Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipInfo.ip.toString().c_str());
+  homeWifiConnected = true;
+  wifiDisplay();
+  NTP.setInterval(3600);
+  NTP.begin();
+  NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
+  NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
+    if (error) {
+      Serial.print("NTP Time Sync error: ");
+      if (error == noResponse)
+        Serial.println("NTP server not reachable");
+      else if (error == invalidAddress)
+        Serial.println("Invalid NTP server address");
+      }
+    else {
+      Serial.print("Got NTP time: ");
+      Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
+      ntpServerInitialized = true;
+      timeDisplay();
+    }
+  });
+}
+
+void onSTADisconnected(WiFiEventStationModeDisconnected event) {
+  // Continuously get messages, so just output once.
+  if(homeWifiConnected) {
+    Serial.printf("Lost connection to %s, error: %d\n", event.ssid.c_str(), event.reason);
+    homeWifiConnected = false;
+    wifiDisplay();
+    NTP.stop();
+  }
+}
+
+void setupServer() {  
   server.on("/", [](){
 //    Serial.println("Rq on /");
     printHomePage();
@@ -90,60 +167,30 @@ void setup(){
     gsm.sendSMS(config->getAdminNumber(), "Reset done");  //   
   });
   
-  Serial.print(MSG_WIFI_OPENING_AP);
-  Serial.println(config->getApSsid());
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(config->getApSsid(), config->getApPwd());
-  Serial.println(WiFi.softAPIP());
-  
-  if(config->homeWifiConfigured()) {
-    Serial.print(MSG_WIFI_CONNECTING_HOME);
-    Serial.println(config->getHomeSsid());
-    WiFi.begin(config->getHomeSsid(), config->getHomePwd());
-  }  
   server.begin();
-  printNumbers();
-   
-  // Initialise the OLED display
-  oledDisplay = new DisplayClass(&display);
-  initMessages();
-  initGsmMessageHandlers();
-  
-  unsigned long now = millis();
-  elapsed10s = now;
-  gsmEnabled = gsm.init();
-}
+}  
 
 void loop() {
-  unsigned long now = millis();
   // Check if any request to serve
   server.handleClient();
-  int wifiStatus = WiFi.status();
-  if (wifiStatus == WL_CONNECTED) {
-    if(!homeWifiConnected) {
-      Serial.println("Home wifi connected");
-      homeWifiConnected = true;
-      wifiDisplay();
-      ping();
-    }
-  } else {
-    if(homeWifiConnected) {
-      Serial.println("Home wifi disconnected");
-      homeWifiConnected = false;
-      wifiDisplay();
-    }
-  }
-  // Display needs to be refreshed periodically to handle blinking
-  oledDisplay->refresh();
+
   
   // Let gsm do its tasks: checking connection, incomming messages, 
   // handler notifications...
   gsm.refresh();   
- 
+  
+  // Display needs to be refreshed periodically to handle blinking
+  oledDisplay->refresh();
+
+  timeNow = now();  // Need to refresh the Time lib, so that NTP server is called
+  if(timeNow - timeLast >= 1) {
+    timeLast = timeNow;
+    timeDisplay();
+  }
+      
   delay(20);
   
 }
-
 
 // Temp, for tests
 void ping() {
@@ -163,6 +210,7 @@ void ping() {
 }
 
 void printNumbers() {
+  if(!gsmEnabled) return;
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     Serial.print("Numero ");
     Serial.print(i);
@@ -274,29 +322,46 @@ void sendJson(const char* msg, int code) {
   server.send(code, "application/json", msg);
 }
 
-void initMessages( void )
-{
+void initDisplay( void ) {
   char message[100];
   oledDisplay->setTitle(config->getName());
-  wifiDisplay();
-  IPAddress ipAddress = WiFi.softAPIP();
-  sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
-  oledDisplay->setLine(1, message);
-  if(!config->isInitialized()) {
-    oledDisplay->setLine(2, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
-  } 
   if(gsmEnabled) oledDisplay->gsmIcon(BLINKING);  
-  oledDisplay->clockIcon(BLINKING);
+  wifiDisplay();
+  timeDisplay();
+}
+
+void timeDisplay() {
+  oledDisplay->clockIcon(!ntpServerInitialized);
   
+  // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
+  if(ntpServerInitialized) {
+    oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
+  }
 }
 
 void wifiDisplay() {
   char message[100];
-  sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
+  WifiType wifiType = AP;
+  
+  if(config->isInitialized()) {
+    oledDisplay->setLine(1, "", NOT_TRANSIENT, NOT_BLINKING);
+  } else {
+    oledDisplay->setLine(1, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
+  }
+    
+  strcpy(message, config->getApSsid());
+  strcat(message, " ");
+  IPAddress ipAddress = WiFi.softAPIP();
+  ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
+  
   bool blinkWifi = false;
-  if (!homeWifiConnected) {
+  if (!homeWifiConnected && config->homeWifiConfigured()) {
     blinkWifi = true;
   }
-  oledDisplay->setLine(0, message); 
-  oledDisplay->wifiIcon(blinkWifi, AP_STA);
+  oledDisplay->setLine(0, message);
+  
+  if(config->homeWifiConfigured()) {
+    wifiType = AP_STA;
+  } 
+  oledDisplay->wifiIcon(blinkWifi, wifiType);
 }

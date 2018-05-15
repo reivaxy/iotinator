@@ -26,6 +26,3 @@
 #define MSG_ERR_BAD_REQUEST "Bad Request"
 #define MSG_ERR_PASSWORD_LENGTH "Password must be at least 8 characters"
 #define MSG_ERR_ADMIN_LENGTH "Admin phone number must be at least 10 characters"
-
-#define MSG_FORMAT_SSID "SSID: %s"
-#define MSG_FORMAT_IP "IP: %d.%d.%d.%d"

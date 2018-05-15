@@ -35,6 +35,10 @@ void MasterConfigClass::initFromDefault() {
   configPtr->homePwd[0] = 0;
   setApSsid(DEFAULT_APSSID);
   setApPwd(DEFAULT_APPWD);
+  // TODO : reset Home Wifi
+  setHomeSsid("");
+  setHomePwd("");
+  setGmtOffset(DEFAULT_GMT_HOUR_OFFSSET, DEFAULT_GMT_MIN_OFFSSET);
 
 }
 
@@ -98,9 +102,20 @@ void MasterConfigClass::setAdminNumber(String numberString) {
   setAdminNumber(number);
 }
 
+void MasterConfigClass::setGmtOffset(int8_t hour, int8_t min) {
+  _getConfigPtr()->gmtHourOffset = hour;
+  _getConfigPtr()->gmtMinOffset = min;
+} 
+int8_t MasterConfigClass::getGmtHourOffset() {
+  return _getConfigPtr()->gmtHourOffset;
+} 
+int8_t MasterConfigClass::getGmtMinOffset() {
+  return _getConfigPtr()->gmtMinOffset;
+}
 
+  
 bool MasterConfigClass::homeWifiConfigured() {
-  if(getHomeSsid() != 0) {
+  if(*getHomeSsid() != 0) {
     return true;
   }
   return false;

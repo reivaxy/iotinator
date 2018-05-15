@@ -21,6 +21,6 @@ public:
   void wifiIcon(bool blink, WifiType type);
   void gsmIcon(bool blink);
   void roamingIcon(bool blink);
-  void refreshDateTime(char *dateTime);
+  void refreshDateTime(const char *dateTime);
   void blinkDateTime(bool blink);
 };

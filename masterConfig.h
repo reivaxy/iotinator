@@ -9,7 +9,7 @@
 #include "registeredPhoneNumber.h"
 #include "XEEPROMConfig.h"
 
-#define CONFIG_VERSION 0
+#define CONFIG_VERSION 2
 #define CONFIG_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
@@ -26,7 +26,10 @@
 // Should be in some common header file...
 #define DEFAULT_APSSID "iotinator" 
 #define DEFAULT_APPWD "iotinator"
- 
+
+#define DEFAULT_GMT_HOUR_OFFSSET 2
+#define DEFAULT_GMT_MIN_OFFSSET 0
+
 typedef struct {
   // First two members version and name are mandatory
   unsigned int version;
@@ -44,6 +47,9 @@ typedef struct {
     
   char apSsid[SSID_MAX_LENGTH + 1];
   char apPwd[PWD_MAX_LENGTH + 1];
+  
+  int8_t gmtHourOffset = DEFAULT_GMT_HOUR_OFFSSET;
+  int8_t gmtMinOffset = DEFAULT_GMT_MIN_OFFSSET;
   
 } masterConfigDataType;
 
@@ -75,7 +81,10 @@ public:
   void setAdminNumber(char *number);
   void setAdminNumber(String numberString);
   char* getAdminNumber();
-  
+  void setGmtOffset(int8_t hour, int8_t min); 
+  int8_t getGmtHourOffset(); 
+  int8_t getGmtMinOffset(); 
+ 
   
 protected:
   masterConfigDataType* _getConfigPtr(void);
