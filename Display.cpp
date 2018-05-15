@@ -16,8 +16,20 @@ void DisplayClass::emptyBatteryIcon(bool blink) {
 void DisplayClass::alertIcon(bool blink) {
   setIcon(1, 71, blink);
 }
-void DisplayClass::wifiIcon(bool blink) {
-  setIcon(2, 72, blink);
+void DisplayClass::wifiIcon(bool blink, WifiType type) {
+  char icon = 72;
+  switch(type) {
+    case AP  : 
+      icon = 76;
+      break;
+    case AP_STA : 
+      icon = 77;
+      break;
+    case STA:
+      icon = 78;
+      break;
+  }
+  setIcon(2, icon, blink);
 }
 void DisplayClass::gsmIcon(bool blink) {
   setIcon(3, 74, blink);

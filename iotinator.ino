@@ -58,11 +58,29 @@ void setup(){
   Serial.println(config->getName());
   
   server.on("/", [](){
-    Serial.println("Rq on /");
+//    Serial.println("Rq on /");
     printHomePage();
     ping();
   });
 
+
+  /**
+   * This API returns the SSID and PWD of the Access Point: modules will use it to connect to iotinator
+   * NB: only 4 clients can connect => may be modules could also create an access point and act as relay for
+   * other modules.
+   **/
+  server.on("/API/config", [](){
+//    Serial.println("Rq on /API/config");
+    char configMsg[100];
+    StaticJsonBuffer<100> jsonBuffer;    
+    // Create the root object
+    JsonObject& root = jsonBuffer.createObject();
+    root["ssid"] = config->getApSsid();
+    root["pwd"] = config->getApPwd();
+    root.printTo(configMsg, 99);
+    sendJson(configMsg, 200);
+  });
+  
   // TODO: remove this !!! Needed during dev
   server.on("/reset", [](){
     Serial.println("Rq on /reset");
@@ -104,14 +122,16 @@ void loop() {
   if (wifiStatus == WL_CONNECTED) {
     if(!homeWifiConnected) {
       Serial.println("Home wifi connected");
+      homeWifiConnected = true;
+      wifiDisplay();
       ping();
     }
-    homeWifiConnected = true;
   } else {
     if(homeWifiConnected) {
       Serial.println("Home wifi disconnected");
+      homeWifiConnected = false;
+      wifiDisplay();
     }
-    homeWifiConnected = false;
   }
   // Display needs to be refreshed periodically to handle blinking
   oledDisplay->refresh();
@@ -193,7 +213,7 @@ void printHomePage() {
       if (apSsid.length() > 0) {
         // TODO: add checks
         config->setApSsid(apSsid);
-        initSsidMsg();
+        wifiDisplay();
       }
       // Read and save new AP PWD 
       String apPwd = server.arg("apPwd");
@@ -250,11 +270,15 @@ void sendPage(const char* msg, int code) {
   free(html); 
 }
 
+void sendJson(const char* msg, int code) {
+  server.send(code, "application/json", msg);
+}
+
 void initMessages( void )
 {
   char message[100];
   oledDisplay->setTitle(config->getName());
-  initSsidMsg();
+  wifiDisplay();
   IPAddress ipAddress = WiFi.softAPIP();
   sprintf(message, MSG_FORMAT_IP, ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
   oledDisplay->setLine(1, message);
@@ -266,13 +290,13 @@ void initMessages( void )
   
 }
 
-void initSsidMsg() {
+void wifiDisplay() {
   char message[100];
   sprintf(message, MSG_FORMAT_SSID, config->getApSsid());
   bool blinkWifi = false;
-  if (strcmp(config->getApSsid(), DEFAULT_APSSID) == 0) {
+  if (!homeWifiConnected) {
     blinkWifi = true;
   }
   oledDisplay->setLine(0, message); 
-  oledDisplay->wifiIcon(blinkWifi);
+  oledDisplay->wifiIcon(blinkWifi, AP_STA);
 }
