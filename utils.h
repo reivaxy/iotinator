@@ -7,3 +7,4 @@
  
 bool isElapsedDelay(unsigned long now, unsigned long* lastTime, unsigned long delay);
 void safeStringCopy(char* to, const char* from, unsigned int length);
+void stringToCharP(String in, char** out);

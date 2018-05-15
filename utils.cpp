@@ -29,3 +29,10 @@ void safeStringCopy(char* to, const char* from, unsigned int length) {
   strncpy(to, from, length);
   to[length] = 0;
 }
+
+// convert a String into a char array that will need to be freed 
+void stringToCharP(String in, char** out) {
+  unsigned int size = in.length() + 1;
+  *out = (char *)malloc(size);
+  in.toCharArray(*out, size);
+}

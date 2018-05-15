@@ -35,11 +35,10 @@ void MasterConfigClass::initFromDefault() {
   configPtr->homePwd[0] = 0;
   setApSsid(DEFAULT_APSSID);
   setApPwd(DEFAULT_APPWD);
-  // TODO : reset Home Wifi
   setHomeSsid("");
   setHomePwd("");
   setGmtOffset(DEFAULT_GMT_HOUR_OFFSSET, DEFAULT_GMT_MIN_OFFSSET);
-
+  setDefaultAPExposition(DEFAULT_AP_EXPOSITION);
 }
 
 void MasterConfigClass::setHomeSsid(const char* ssid) {
@@ -81,13 +80,29 @@ char* MasterConfigClass::getHomeSsid(void) {
 char* MasterConfigClass::getHomePwd(void) {
    return _getConfigPtr()->homePwd;
 }
-char* MasterConfigClass::getApSsid(void) {
-  return _getConfigPtr()->apSsid;
+
+// For the first 60 seconds the default AP is opened
+char* MasterConfigClass::getApSsid(bool force) {
+  if(force || millis() > getDefaultAPExposition())
+    return _getConfigPtr()->apSsid;
+  else 
+    return (char *)DEFAULT_APSSID;
 }
-char* MasterConfigClass::getApPwd(void) {
-  return _getConfigPtr()->apPwd;
+// For the first 60 seconds the default AP is opened
+char* MasterConfigClass::getApPwd(bool force) {
+  if(force || millis() > getDefaultAPExposition())
+    return _getConfigPtr()->apPwd;
+  else
+    return (char *)DEFAULT_APPWD; 
 }
 
+void MasterConfigClass::setDefaultAPExposition(int msDelay) {
+  _getConfigPtr()->defaultAPExposition = msDelay;
+}
+int MasterConfigClass::getDefaultAPExposition(void) {
+  return _getConfigPtr()->defaultAPExposition;
+}
+  
 void MasterConfigClass::setAdminNumber(char *number) {
   _phoneNumbers[0]->setNumber(number);
   _phoneNumbers[0]->setAdmin(true);
@@ -113,16 +128,17 @@ int8_t MasterConfigClass::getGmtMinOffset() {
   return _getConfigPtr()->gmtMinOffset;
 }
 
-  
-bool MasterConfigClass::homeWifiConfigured() {
+// The home Wifi is configured if its ssid is not an empty string...  
+bool MasterConfigClass::isHomeWifiConfigured() {
   if(*getHomeSsid() != 0) {
     return true;
   }
   return false;
 }
 
-bool MasterConfigClass::isInitialized() {
-  if(strcmp(getApPwd(), DEFAULT_APPWD) != 0) {
+// The AP is configured if its password is not the default password.
+bool MasterConfigClass::isAPInitialized() {
+  if(strcmp(_getConfigPtr()->apPwd, DEFAULT_APPWD) != 0) {
     return true;
   }
   return false;

@@ -9,7 +9,7 @@
 #include "registeredPhoneNumber.h"
 #include "XEEPROMConfig.h"
 
-#define CONFIG_VERSION 2
+#define CONFIG_VERSION 1
 #define CONFIG_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
@@ -26,6 +26,7 @@
 // Should be in some common header file...
 #define DEFAULT_APSSID "iotinator" 
 #define DEFAULT_APPWD "iotinator"
+#define DEFAULT_AP_EXPOSITION 60000
 
 #define DEFAULT_GMT_HOUR_OFFSSET 2
 #define DEFAULT_GMT_MIN_OFFSSET 0
@@ -47,6 +48,7 @@ typedef struct {
     
   char apSsid[SSID_MAX_LENGTH + 1];
   char apPwd[PWD_MAX_LENGTH + 1];
+  int defaultAPExposition = DEFAULT_AP_EXPOSITION;
   
   int8_t gmtHourOffset = DEFAULT_GMT_HOUR_OFFSSET;
   int8_t gmtMinOffset = DEFAULT_GMT_MIN_OFFSSET;
@@ -74,17 +76,19 @@ public:
   void setApPwd(String pwd);
   char* getHomeSsid(void);
   char* getHomePwd(void);
-  char* getApSsid(void);
-  char* getApPwd(void);
-  bool homeWifiConfigured(void);
-  bool isInitialized(void);
+  char* getApSsid(bool force=false);
+  char* getApPwd(bool force=false);
+  void setDefaultAPExposition(int delay);
+  int getDefaultAPExposition(void);
+  
+  bool isHomeWifiConfigured(void);
+  bool isAPInitialized(void);
   void setAdminNumber(char *number);
   void setAdminNumber(String numberString);
   char* getAdminNumber();
   void setGmtOffset(int8_t hour, int8_t min); 
   int8_t getGmtHourOffset(); 
   int8_t getGmtMinOffset(); 
- 
   
 protected:
   masterConfigDataType* _getConfigPtr(void);

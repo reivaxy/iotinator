@@ -18,6 +18,7 @@
 #include "initPageHtml.h"
 #include "masterConfig.h"
 #include "Display.h"
+#include "utils.h"
 
 #define TIME_STR_LENGTH 100
 
@@ -53,6 +54,7 @@ time_t timeLast = 0;
 // Handlers will work as long as these variables exists. 
 static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
+bool defaultAP = true;
 
 void setup(){
   Serial.begin(9600);
@@ -60,34 +62,48 @@ void setup(){
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME, (void*)&masterConfigData);
   config->init();
   Serial.println(config->getName());
-  setupServer();
+  initServer();
   
+  // Before checking for Home Wifi configuration, module is Wifi Access Point only
   WiFi.mode(WIFI_AP);
   
-  if(config->homeWifiConfigured()) {
-    WiFi.mode(WIFI_AP_STA);
+  // If Home wifi was configured previously, module is both Access Point and Station
+  // And connect to Home Wifi.
+  if(config->isHomeWifiConfigured()) {
     Serial.print(MSG_WIFI_CONNECTING_HOME);
     Serial.println(config->getHomeSsid());
+    WiFi.mode(WIFI_AP_STA);
     WiFi.begin(config->getHomeSsid(), config->getHomePwd());
   }  
+  
+  // Initialise the OLED display
+  oledDisplay = new DisplayClass(&display);
+  initDisplay();
+
+  // After a reset, open Default Access Point
+  // If Access Point was customized, we'll switch to it after one minute
+  // This is supposed to give slave modules time to initialize.
+  initSoftAP();
+
+  stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
+  stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+  
+  initGsmMessageHandlers();
+  gsmEnabled = gsm.init();
+  printNumbers();     
+  
+  wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
+  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected); 
+}
+
+// Opens the Wifi network Access Point.
+// For the first 60 seconds, it is the default one, then the custom one if configured.
+void initSoftAP() {
   Serial.print(MSG_WIFI_OPENING_AP);
   Serial.println(config->getApSsid());
   WiFi.softAP(config->getApSsid(), config->getApPwd());
   Serial.println(WiFi.softAPIP());
-  stationConnectedHandler  = WiFi.onSoftAPModeStationConnected(&onStationConnected);
-  stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
-  
-  printNumbers();
-   
-  // Initialise the OLED display
-  oledDisplay = new DisplayClass(&display);
-  initDisplay();
-  
-  initGsmMessageHandlers();
-  gsmEnabled = gsm.init();
-  
-  wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
-  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected); 
+  wifiDisplay();
 }
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
@@ -133,7 +149,7 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
   }
 }
 
-void setupServer() {  
+void initServer() {  
   server.on("/", [](){
 //    Serial.println("Rq on /");
     printHomePage();
@@ -142,19 +158,29 @@ void setupServer() {
 
 
   /**
-   * This API returns the SSID and PWD of the Access Point: modules will use it to connect to iotinator
+   * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
    * NB: only 4 clients can connect => may be modules could also create an access point and act as relay for
    * other modules.
    **/
-  server.on("/API/config", [](){
+  server.on("/api/config", [](){
 //    Serial.println("Rq on /API/config");
-    char configMsg[100];
-    StaticJsonBuffer<100> jsonBuffer;    
+    char configMsg[200];
+    StaticJsonBuffer<200> jsonBuffer;    
     // Create the root object
     JsonObject& root = jsonBuffer.createObject();
-    root["ssid"] = config->getApSsid();
-    root["pwd"] = config->getApPwd();
-    root.printTo(configMsg, 99);
+    root["ssid"] = config->getApSsid(true);
+    root["pwd"] = config->getApPwd(true);
+    root["timestamp"] = now();
+    // Do we need lines below ?
+//    char *timeStr ;
+//    stringToCharP(NTP.getTimeStr(), &timeStr);
+//    root["time"] = timeStr;
+//    char *dateStr ;
+//    stringToCharP(NTP.getDateStr(), &dateStr);
+//    root["date"] = dateStr;
+    root.printTo(configMsg, 199);
+//    free(timeStr);
+//    free(dateStr);
     sendJson(configMsg, 200);
   });
   
@@ -170,11 +196,20 @@ void setupServer() {
   server.begin();
 }  
 
+
+/*********************************
+ * Main Loop
+ *********************************/
 void loop() {
+
+  // X seconds after reset, switch to custom AP if set
+  if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
+    initSoftAP();
+    defaultAP = false;
+  }
   // Check if any request to serve
   server.handleClient();
-
-  
+ 
   // Let gsm do its tasks: checking connection, incomming messages, 
   // handler notifications...
   gsm.refresh();   
@@ -223,7 +258,7 @@ void printNumbers() {
 void printHomePage() {
   // If init already done, display page saying so, otherwise display init page
   // TODO Disabled for now
-  if (false && config->isInitialized()) {
+  if (false && config->isAPInitialized()) {
     Serial.println("Init done Page");
     sendPage(MSG_INIT_ALREADY_DONE, 200);
   } else {
@@ -234,7 +269,7 @@ void printHomePage() {
     free(page);
     server.on("/init", [](){
       Serial.println("Rq on /init");
-//      if(config->isInitialized()) {
+//      if(config->isAPInitialized()) {
 //        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
 //        return;
 //      }
@@ -299,7 +334,7 @@ void printHomePage() {
       // New Access Point
       WiFi.mode(WIFI_AP_STA);
       WiFi.softAP(config->getApSsid(), config->getApPwd());
-      if(config->homeWifiConfigured()) {
+      if(config->isHomeWifiConfigured()) {
         WiFi.begin(config->getHomeSsid(), config->getHomePwd());
       }
       
@@ -334,8 +369,15 @@ void timeDisplay() {
   oledDisplay->clockIcon(!ntpServerInitialized);
   
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
-  if(ntpServerInitialized) {
+  
+  int millisec = millis();
+  if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
+  } else {
+    char message[100];
+    sprintf(message, "%d", millis()/1000);
+    oledDisplay->refreshDateTime(message);
+    
   }
 }
 
@@ -343,7 +385,7 @@ void wifiDisplay() {
   char message[100];
   WifiType wifiType = AP;
   
-  if(config->isInitialized()) {
+  if(config->isAPInitialized()) {
     oledDisplay->setLine(1, "", NOT_TRANSIENT, NOT_BLINKING);
   } else {
     oledDisplay->setLine(1, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
@@ -355,12 +397,12 @@ void wifiDisplay() {
   ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
   
   bool blinkWifi = false;
-  if (!homeWifiConnected && config->homeWifiConfigured()) {
+  if (!homeWifiConnected && config->isHomeWifiConfigured()) {
     blinkWifi = true;
   }
   oledDisplay->setLine(0, message);
   
-  if(config->homeWifiConfigured()) {
+  if(config->isHomeWifiConfigured()) {
     wifiType = AP_STA;
   } 
   oledDisplay->wifiIcon(blinkWifi, wifiType);
