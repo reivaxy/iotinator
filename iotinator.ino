@@ -13,6 +13,7 @@
 #include <TimeLib.h>
 #include <NtpClientLib.h>
 #include <XIOTDisplay.h>
+#include <XIOTModule.h>
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
@@ -165,18 +166,18 @@ void initServer() {
    **/
   server.on("/api/config", [](){
 //    Serial.println("Rq on /API/config");
-    char configMsg[200];
-    StaticJsonBuffer<200> jsonBuffer;    
+    char configMsg[CONFIG_PAYLOAD_SIZE];
+    StaticJsonBuffer<CONFIG_PAYLOAD_SIZE> jsonBuffer;    
     // Create the root object
     JsonObject& root = jsonBuffer.createObject();
-    root["version"] = API_VERSION ;
-    root["APInitialized"] = config->isAPInitialized();
-    root["APssid"] = config->getApSsid(true);
-    root["APpwd"] = config->getApPwd(true);
-    root["timestamp"] = now();
-    root["homeWifiConnected"] = homeWifiConnected;
-    root["gsmEnabled"] = gsmEnabled;
-    root["timeInitialized"] = ntpServerInitialized;
+    root[XIOTModuleJsonTag::version] = API_VERSION ;
+    root[XIOTModuleJsonTag::APInitialized] = config->isAPInitialized();
+    root[XIOTModuleJsonTag::APSsid] = config->getApSsid(true);
+    root[XIOTModuleJsonTag::APPwd] = config->getApPwd(true);
+    root[XIOTModuleJsonTag::timestamp] = now();
+    root[XIOTModuleJsonTag::homeWifiConnected] = homeWifiConnected;
+    root[XIOTModuleJsonTag::gsmEnabled] = gsmEnabled;
+    root[XIOTModuleJsonTag::timeInitialized] = ntpServerInitialized;
     root.printTo(configMsg, 199);
     sendJson(configMsg, 200);
   });
@@ -254,7 +255,7 @@ void printNumbers() {
 
 void printHomePage() {
   // If init already done, display page saying so, otherwise display init page
-  // TODO Disabled for now
+  // TODO Disabled for now, need to be enabled !!
   if (false && config->isAPInitialized()) {
     Serial.println("Init done Page");
     sendPage(MSG_INIT_ALREADY_DONE, 200);
