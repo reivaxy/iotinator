@@ -14,10 +14,10 @@
 #include <stdio.h>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
+#include <XIOTDisplay.h>
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
-#include "Display.h"
 #include "utils.h"
 
 #define TIME_STR_LENGTH 100

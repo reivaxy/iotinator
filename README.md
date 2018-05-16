@@ -15,7 +15,8 @@ It also provides an API so that modules can record logs, stats, etc on a website
 Configuration is persisted in EEPROM.
 
 
+Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled. Current time is fetched from NTP servers once Home Wifi is configured and connected.
+
 Picture of the early prototype:
 
 <img src="resources/prototype.jpg" width="400px"/>
-
