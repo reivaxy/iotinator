@@ -4,9 +4,7 @@
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-#include <EEPROM.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
@@ -24,7 +22,7 @@
 #define API_VERSION "1.0"    // modules can check API version to make sure they are compatible...
 
 // Global object to store config
-masterConfigDataType masterConfigData;
+MasterConfigDataType masterConfigData;
 MasterConfigClass *config;
 DisplayClass *oledDisplay;
 
@@ -41,7 +39,6 @@ GsmClass gsm(&serialSIM800);
 // and keep it working further than in the constructor...
 SSD1306 display(0x3C, D5, D6);
 
-//MDNSResponder mdns;
 ESP8266WebServer server(80);
 bool homeWifiConnected = false;
 bool ntpServerInitialized = false;
@@ -109,11 +106,13 @@ void initSoftAP() {
 }
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-  Serial.println("Station connected.");
+  Serial.println(MSG_WIFI_STATION_CONNECTED);
+  oledDisplay->setLine(1, MSG_WIFI_STATION_CONNECTED, TRANSIENT, NOT_BLINKING);
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
-  Serial.println("Station disconnected.");
+  Serial.println(MSG_WIFI_STATION_DISCONNECTED);
+  oledDisplay->setLine(1, MSG_WIFI_STATION_DISCONNECTED, TRANSIENT, NOT_BLINKING);
 }
 
 // Called when STA is connected to home wifi and IP was obtained
@@ -232,8 +231,6 @@ void ping() {
   Serial.println("Ping");
   Serial.println(config->getHomeSsid());
   Serial.println(WiFi.localIP());
-  WiFiClient client;
-
   HTTPClient http;
   http.begin("http://c-est-simple.com/cgi-bin/webdistrib.cgi?toto=1");
   http.addHeader("Content-Type", "multipart/form-data");
@@ -395,12 +392,12 @@ void wifiDisplay() {
   strcat(message, " ");
   IPAddress ipAddress = WiFi.softAPIP();
   ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
+  oledDisplay->setLine(0, message);
   
   bool blinkWifi = false;
   if (!homeWifiConnected && config->isHomeWifiConfigured()) {
     blinkWifi = true;
   }
-  oledDisplay->setLine(0, message);
   
   if(config->isHomeWifiConfigured()) {
     wifiType = AP_STA;

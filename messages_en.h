@@ -21,6 +21,9 @@
 #define MSG_WIFI_CONNECTING_HOME "Connecting to Home WiFi "
 #define MSG_WIFI_CONNECTED_HOME "Connected to Home WiFi "
 #define MSG_WIFI_HOME_TIMEOUT "Home WiFi Connection time out"
+#define MSG_WIFI_STATION_CONNECTED "Station connected"
+#define MSG_WIFI_STATION_DISCONNECTED "Station disconnected"
+
 
 #define MSG_ERR_ALREADY_INITIALIZED "Forbidden page, already initialized"
 #define MSG_ERR_BAD_REQUEST "Bad Request"

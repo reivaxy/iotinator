@@ -6,7 +6,7 @@
  
 #include "masterConfig.h"
 
-MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(masterConfigDataType)) {
+MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(MasterConfigDataType)) {
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i] = new RegisteredPhoneNumberClass(&(_getConfigPtr()->registeredNumbers[i]));
@@ -25,7 +25,7 @@ void MasterConfigClass::initFromDefault() {
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i]->reset();
   }
-  masterConfigDataType* configPtr = _getConfigPtr();
+  MasterConfigDataType* configPtr = _getConfigPtr();
   XUtils::safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
   configPtr->statPeriod = DEFAULT_STAT_PERIOD;
   configPtr->homeSsid[0] = 0;
@@ -166,6 +166,6 @@ RegisteredPhoneNumberClass* MasterConfigClass::getRegisteredPhoneByNumber(const 
  * Return the typed data structure object
  *
  */
-masterConfigDataType* MasterConfigClass::_getConfigPtr(void) {
-  return (masterConfigDataType*)getData();
+MasterConfigDataType* MasterConfigClass::_getConfigPtr(void) {
+  return (MasterConfigDataType*)getData();
 }

@@ -41,7 +41,7 @@ typedef struct {
   int8_t gmtHourOffset = DEFAULT_GMT_HOUR_OFFSSET;
   int8_t gmtMinOffset = DEFAULT_GMT_MIN_OFFSSET;
   
-} masterConfigDataType;
+} MasterConfigDataType;
 
  
 class MasterConfigClass:public XEEPROMConfigClass {
@@ -79,6 +79,6 @@ public:
   int8_t getGmtMinOffset(); 
   
 protected:
-  masterConfigDataType* _getConfigPtr(void);
+  MasterConfigDataType* _getConfigPtr(void);
   RegisteredPhoneNumberClass* _phoneNumbers[MAX_PHONE_NUMBERS];  
 };
