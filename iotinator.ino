@@ -22,6 +22,8 @@
 
 #define TIME_STR_LENGTH 100
 
+#define API_VERSION "1.0"    // modules can check API version to make sure they are compatible...
+
 // Global object to store config
 masterConfigDataType masterConfigData;
 MasterConfigClass *config;
@@ -42,8 +44,8 @@ SSD1306 display(0x3C, D5, D6);
 
 //MDNSResponder mdns;
 ESP8266WebServer server(80);
-boolean homeWifiConnected = false;
-boolean ntpServerInitialized = false;
+bool homeWifiConnected = false;
+bool ntpServerInitialized = false;
 unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
 unsigned long elapsed2s = 0;
@@ -66,6 +68,15 @@ void setup(){
   
   // Before checking for Home Wifi configuration, module is Wifi Access Point only
   WiFi.mode(WIFI_AP);
+
+  // Initialise the OLED display
+  oledDisplay = new DisplayClass(&display);
+  initDisplay();
+
+  // After a reset, open Default Access Point
+  // If Access Point was customized, we'll switch to it after one minute
+  // This is supposed to give slave modules time to initialize.
+  initSoftAP();
   
   // If Home wifi was configured previously, module is both Access Point and Station
   // And connect to Home Wifi.
@@ -76,14 +87,6 @@ void setup(){
     WiFi.begin(config->getHomeSsid(), config->getHomePwd());
   }  
   
-  // Initialise the OLED display
-  oledDisplay = new DisplayClass(&display);
-  initDisplay();
-
-  // After a reset, open Default Access Point
-  // If Access Point was customized, we'll switch to it after one minute
-  // This is supposed to give slave modules time to initialize.
-  initSoftAP();
 
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
@@ -168,19 +171,15 @@ void initServer() {
     StaticJsonBuffer<200> jsonBuffer;    
     // Create the root object
     JsonObject& root = jsonBuffer.createObject();
-    root["ssid"] = config->getApSsid(true);
-    root["pwd"] = config->getApPwd(true);
+    root["version"] = API_VERSION ;
+    root["APInitialized"] = config->isAPInitialized();
+    root["APssid"] = config->getApSsid(true);
+    root["APpwd"] = config->getApPwd(true);
     root["timestamp"] = now();
-    // Do we need lines below ?
-//    char *timeStr ;
-//    stringToCharP(NTP.getTimeStr(), &timeStr);
-//    root["time"] = timeStr;
-//    char *dateStr ;
-//    stringToCharP(NTP.getDateStr(), &dateStr);
-//    root["date"] = dateStr;
+    root["homeWifiConnected"] = homeWifiConnected;
+    root["gsmEnabled"] = gsmEnabled;
+    root["timeInitialized"] = ntpServerInitialized;
     root.printTo(configMsg, 199);
-//    free(timeStr);
-//    free(dateStr);
     sendJson(configMsg, 200);
   });
   
@@ -190,7 +189,9 @@ void initServer() {
     config->initFromDefault();
     config->saveToEeprom();
     sendPage("Reset Done", 200);
-    gsm.sendSMS(config->getAdminNumber(), "Reset done");  //   
+    gsm.sendSMS(config->getAdminNumber(), "Reset done");  // 
+    WiFi.mode(WIFI_AP);
+    initSoftAP();  
   });
   
   server.begin();
@@ -374,8 +375,8 @@ void timeDisplay() {
   if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
-    char message[100];
-    sprintf(message, "%d", millis()/1000);
+    char message[10];
+    sprintf(message, "%d", millisec/1000);
     oledDisplay->refreshDateTime(message);
     
   }
