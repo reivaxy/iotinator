@@ -7,7 +7,7 @@
 #pragma once
 
 #include "registeredPhoneNumber.h"
-#include "XEEPROMConfig.h"
+#include <XIOTConfig.h>
 
 #define CONFIG_VERSION 1
 #define CONFIG_NAME "iotinator"
@@ -15,18 +15,6 @@
 #define HOSTNAME_MAX_LENGTH 50
 #define DEFAULT_WEBAPP_HOST "http://www.iotinator.com/"
 #define DEFAULT_STAT_PERIOD 1800000 // Half an hour. Should 0 be default ?
-
-#define SSID_MAX_LENGTH 20
-#define PWD_MAX_LENGTH 50
-
-// The default Access Point SSID and Password are known and used by slave modules
-// to connect the first time.
-// Master module needs to open this AP when connecting a new slave, before it returns to
-// the customized SSID and PWD (after communicating them to newly connected slave)
-// Should be in some common header file...
-#define DEFAULT_APSSID "iotinator" 
-#define DEFAULT_APPWD "iotinator"
-#define DEFAULT_AP_EXPOSITION 60000
 
 #define DEFAULT_GMT_HOUR_OFFSSET 2
 #define DEFAULT_GMT_MIN_OFFSSET 0

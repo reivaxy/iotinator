@@ -4,6 +4,7 @@
 
 #include <SoftwareSerial.h>
 #include <Arduino.h>
+#include <XUtils.h>
 #include <map>
 #include <string>
 #undef max  // Because Arduino.h and queue are not compatible otherwise

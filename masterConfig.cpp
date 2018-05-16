@@ -4,8 +4,6 @@
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-#include <Arduino.h>
-
 #include "masterConfig.h"
 #include "utils.h"
 
@@ -29,7 +27,7 @@ void MasterConfigClass::initFromDefault() {
     _phoneNumbers[i]->reset();
   }
   masterConfigDataType* configPtr = _getConfigPtr();
-  safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
+  XUtils::safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
   configPtr->statPeriod = DEFAULT_STAT_PERIOD;
   configPtr->homeSsid[0] = 0;
   configPtr->homePwd[0] = 0;
@@ -42,7 +40,7 @@ void MasterConfigClass::initFromDefault() {
 }
 
 void MasterConfigClass::setHomeSsid(const char* ssid) {
-  safeStringCopy(_getConfigPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
+  XUtils::safeStringCopy(_getConfigPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
 }
 void MasterConfigClass::setHomeSsid(String ssidString) {
   char ssid[SSID_MAX_LENGTH];
@@ -50,7 +48,7 @@ void MasterConfigClass::setHomeSsid(String ssidString) {
   setHomeSsid(ssid);
 }
 void MasterConfigClass::setHomePwd(const char* pwd) {
-  safeStringCopy(_getConfigPtr()->homePwd, pwd, PWD_MAX_LENGTH);
+  XUtils::safeStringCopy(_getConfigPtr()->homePwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setHomePwd(String pwdString) {
   char pwd[PWD_MAX_LENGTH];
@@ -59,7 +57,7 @@ void MasterConfigClass::setHomePwd(String pwdString) {
 }
 
 void MasterConfigClass::setApSsid(const char* ssid) {
-  safeStringCopy(_getConfigPtr()->apSsid, ssid, SSID_MAX_LENGTH);
+  XUtils::safeStringCopy(_getConfigPtr()->apSsid, ssid, SSID_MAX_LENGTH);
 }
 void MasterConfigClass::setApSsid(String ssidString) {
   char ssid[SSID_MAX_LENGTH];
@@ -67,7 +65,7 @@ void MasterConfigClass::setApSsid(String ssidString) {
   setApSsid(ssid);
 }
 void MasterConfigClass::setApPwd(const char* pwd) {
-  safeStringCopy(_getConfigPtr()->apPwd, pwd, PWD_MAX_LENGTH);
+  XUtils::safeStringCopy(_getConfigPtr()->apPwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setApPwd(String pwdString) {
   char pwd[PWD_MAX_LENGTH];

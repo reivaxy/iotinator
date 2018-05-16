@@ -4,8 +4,7 @@
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-#include <Arduino.h>
-#include "utils.h"
+#include <XUtils.h>
 
 #include "registeredPhoneNumber.h"
 #define DEFAULT_MIN_ALERT_INTERVAL 1800000 // Half an hour
@@ -16,7 +15,7 @@ RegisteredPhoneNumberClass::RegisteredPhoneNumberClass(phoneNumberDataType* phon
 
 void RegisteredPhoneNumberClass::setNumber(char *number) {
   // Copy number making sure there is no overflow
-  safeStringCopy(_phoneNumberPtr->number, number, PHONE_NUMBER_LENGTH);
+  XUtils::safeStringCopy(_phoneNumberPtr->number, number, PHONE_NUMBER_LENGTH);
 }
 
 char* RegisteredPhoneNumberClass::getNumber(void) {

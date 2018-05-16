@@ -46,10 +46,10 @@ void GsmClass::refresh() {
   if (DISABLE_GSM) return;
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
-  if(isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
+  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
     _checkConnection();
   }
-  if(isElapsedDelay(now, &_lastCheckTime, CHECK_TIME_PERIOD)) {
+  if(XUtils::isElapsedDelay(now, &_lastCheckTime, CHECK_TIME_PERIOD)) {
     _getTime();
   }
   
