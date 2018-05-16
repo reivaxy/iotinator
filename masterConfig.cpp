@@ -5,7 +5,6 @@
  */
  
 #include "masterConfig.h"
-#include "utils.h"
 
 MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(masterConfigDataType)) {
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure

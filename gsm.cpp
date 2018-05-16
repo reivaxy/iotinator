@@ -2,7 +2,6 @@
 #include <string>
 #include <Arduino.h>
 #include "gsm.h"
-#include "utils.h"
 #define MAX_MSG_LENGTH 500
 
 #define CHECK_NETWORK_PERIOD 15000 // 15 seconds
