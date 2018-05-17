@@ -35,10 +35,6 @@ SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
 GsmClass gsm(&serialSIM800);
 #include "gsmMessageHandlers.h"
 
-// I couldn't find a way to instanciate this in the XOLEDDisplay lib
-// and keep it working further than in the constructor...
-SSD1306 display(0x3C, D5, D6);
-
 ESP8266WebServer server(80);
 bool homeWifiConnected = false;
 bool ntpServerInitialized = false;
@@ -66,7 +62,7 @@ void setup(){
   WiFi.mode(WIFI_AP);
 
   // Initialise the OLED display
-  oledDisplay = new DisplayClass(&display);
+  oledDisplay = new DisplayClass(0x3C, D5, D6);
   initDisplay();
 
   // After a reset, open Default Access Point
