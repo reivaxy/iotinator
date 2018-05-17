@@ -10,3 +10,10 @@ http://www.arduino.cc/en/Reference/Ethernet
 
 NtpClientLib by German Martin 2.5.0
 Time by Michael Margoli1.5.0
+
+
+- https://github.com/reivaxy/XOLEDDisplay.git 
+- https://github.com/reivaxy/XIOTDisplay.git
+- https://github.com/reivaxy/XEEPROMConfig.git
+- https://github.com/reivaxy/XUtils.git
+- https://github.com/reivaxy/XIOTModule.git

@@ -17,6 +17,18 @@ Configuration is persisted in EEPROM.
 
 Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled. Current time is fetched from NTP servers once Home Wifi is configured and connected.
 
+You'll need to clone these repositories into your arduino "libraries" directory to be able to compile:
+
+- https://github.com/reivaxy/XOLEDDisplay.git 
+- https://github.com/reivaxy/XIOTDisplay.git
+- https://github.com/reivaxy/XEEPROMConfig.git
+- https://github.com/reivaxy/XUtils.git
+- https://github.com/reivaxy/XIOTModule.git
+
+And some libraries that can be found through the Arduino IDE
+
+TODO: list the libraries :)
+
 Picture of the early prototype:
 
 <img src="resources/prototype.jpg" width="400px"/>
