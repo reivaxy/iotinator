@@ -50,6 +50,10 @@ static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
 bool defaultAP = true;
 
+
+// TODO: when XIOTModule class can handle AP_STA, use it here to get rid of
+// TODO: a lot of common code.
+
 void setup(){
   Serial.begin(9600);
   delay(100);
@@ -212,9 +216,11 @@ void loop() {
   // Display needs to be refreshed periodically to handle blinking
   oledDisplay->refresh();
 
-  
+  // Time on display should be refreshed every second
+  // Intentionnally not using the value returned by now(), since it changes
+  // when time is set.  
   timeNow = millis();
-  if(timeNow - timeLast >= 1) {
+  if(timeNow - timeLast >= 1000) {
     timeLast = timeNow;
     timeDisplay();
   }
