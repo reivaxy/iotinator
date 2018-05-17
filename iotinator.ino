@@ -13,7 +13,7 @@
 #include <TimeLib.h>
 #include <NtpClientLib.h>
 #include <XIOTDisplay.h>
-#include <XIOTModule.h>
+#include <XIOTModule.h> 
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
@@ -35,7 +35,7 @@ SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
 GsmClass gsm(&serialSIM800);
 #include "gsmMessageHandlers.h"
 
-ESP8266WebServer server(80);
+ESP8266WebServer* server;
 bool homeWifiConnected = false;
 bool ntpServerInitialized = false;
 unsigned long elapsed200ms = 0;
@@ -44,12 +44,19 @@ unsigned long elapsed2s = 0;
 bool gsmEnabled = false;
 MDNSResponder mdns;
 time_t timeNow = 0; 
-time_t timeLast = 0;
+time_t _timeLastTimeDisplay = 0;
+time_t _timeLastTimeWifi = 0;
+
+// Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
+// that we want to reuse here :) 
+XIOTModule* module; 
+
 // Handlers will work as long as these variables exists. 
 static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
 bool defaultAP = true;
-
+bool displayAP = false;
+String ipOnHomeSsid;
 
 // TODO: when XIOTModule class can handle AP_STA, use it here to get rid of
 // TODO: a lot of common code.
@@ -60,6 +67,8 @@ void setup(){
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME);
   config->init();
   Serial.println(config->getName());
+  
+  module = new XIOTModule();
   initServer();
   
   // Before checking for Home Wifi configuration, module is Wifi Access Point only
@@ -117,7 +126,8 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 
 // Called when STA is connected to home wifi and IP was obtained
 void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
-  Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipInfo.ip.toString().c_str());
+  ipOnHomeSsid = ipInfo.ip.toString();
+  Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
   wifiDisplay();
   NTP.setInterval(3600);
@@ -150,21 +160,20 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
   }
 }
 
-void initServer() {  
-  server.on("/", [](){
-//    Serial.println("Rq on /");
+void initServer() {
+  server = module->getServer();  
+  server->on("/", [](){
     printHomePage();
-    ping();
   });
-
 
   /**
    * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
-   * NB: only 4 clients can connect => may be modules could also create an access point and act as relay for
+   * NB: only 4 clients  can connect (TODO: to check!) 
+   * => may be slave modules could also create an access point and act as relay for
    * other modules.
    **/
-  server.on("/api/config", [](){
-//    Serial.println("Rq on /API/config");
+  server->on("/api/config", [](){
+//    Serial.println("Rq on /api/config");
     char configMsg[CONFIG_PAYLOAD_SIZE];
     StaticJsonBuffer<CONFIG_PAYLOAD_SIZE> jsonBuffer;    
     // Create the root object
@@ -177,22 +186,32 @@ void initServer() {
     root[XIOTModuleJsonTag::homeWifiConnected] = homeWifiConnected;
     root[XIOTModuleJsonTag::gsmEnabled] = gsmEnabled;
     root[XIOTModuleJsonTag::timeInitialized] = ntpServerInitialized;
-    root.printTo(configMsg, 199);
-    sendJson(configMsg, 200);
+    root.printTo(configMsg, CONFIG_PAYLOAD_SIZE-1);
+    module->sendJson(configMsg, 200);
   });
+
+  /**
+   * This endpoints allows slave modules to register themselves to master
+   */
+  server->on("/api/register",  [](){
+    Serial.println("Rq on /api/register");
+    oledDisplay->setLine(1, "Registering module", TRANSIENT, NOT_BLINKING);
+    Serial.println(server->arg("plain"));
+    module->sendText("ok", 200);
+  });
+
   
-  // TODO: remove this !!! Needed during dev
-  server.on("/reset", [](){
+  // TODO: remove this or make it better. Needed during dev
+  server->on("/reset", [](){
     Serial.println("Rq on /reset");
     config->initFromDefault();
     config->saveToEeprom();
-    sendPage("Reset Done", 200);
+    module->sendText("Reset Done", 200);
     gsm.sendSMS(config->getAdminNumber(), "Reset done");  // 
     WiFi.mode(WIFI_AP);
     initSoftAP();  
   });
   
-  server.begin();
 }  
 
 
@@ -207,7 +226,7 @@ void loop() {
     defaultAP = false;
   }
   // Check if any request to serve
-  server.handleClient();
+  server->handleClient();
  
   // Let gsm do its tasks: checking connection, incomming messages, 
   // handler notifications...
@@ -220,29 +239,34 @@ void loop() {
   // Intentionnally not using the value returned by now(), since it changes
   // when time is set.  
   timeNow = millis();
-  if(timeNow - timeLast >= 1000) {
-    timeLast = timeNow;
+  
+  if(timeNow - _timeLastTimeDisplay >= 1000) {
+    _timeLastTimeDisplay = timeNow;
     timeDisplay();
   }
-      
+  if(timeNow - _timeLastTimeWifi >= 5000) {
+    _timeLastTimeWifi = timeNow;
+    // refresh wifi display every Xs to display both ssid/ips alternatively
+    wifiDisplay();
+  }      
   delay(20);
   
 }
 
 // Temp, for tests
-void ping() {
-  Serial.println("Ping");
-  Serial.println(config->getHomeSsid());
-  Serial.println(WiFi.localIP());
-  HTTPClient http;
-  http.begin("http://c-est-simple.com/cgi-bin/webdistrib.cgi?toto=1");
-  http.addHeader("Content-Type", "multipart/form-data");
-  // doc on payload format: https://docs.internetofthings.ibmcloud.com/messaging/payload.html
-  int httpCode = http.GET();   // Log stuff to Serial ?
-  Serial.print("HTTP code: ");
-  Serial.println(httpCode);
-  http.end();
-}
+//void ping() {
+//  Serial.println("Ping");
+//  Serial.println(config->getHomeSsid());
+//  Serial.println(WiFi.localIP());
+//  HTTPClient http;
+//  http.begin("http://c-est-simple.com/cgi-bin/webdistrib.cgi?toto=1");
+//  http.addHeader("Content-Type", "multipart/form-data");
+//   doc on payload format: https://docs.internetofthings.ibmcloud.com/messaging/payload.html
+//  int httpCode = http.GET();   // Log stuff to Serial ?
+//  Serial.print("HTTP code: ");
+//  Serial.println(httpCode);
+//  http.end();
+//}
 
 void printNumbers() {
   if(!gsmEnabled) return;
@@ -260,28 +284,28 @@ void printHomePage() {
   // TODO Disabled for now, need to be enabled !!
   if (false && config->isAPInitialized()) {
     Serial.println("Init done Page");
-    sendPage(MSG_INIT_ALREADY_DONE, 200);
+    module->sendText(MSG_INIT_ALREADY_DONE, 200);
   } else {
   
     char *page = (char *)malloc(strlen(initPage) + 10);
     sprintf(page, initPage, gsmEnabled ? "": "noGsm");
-    server.send(200, "text/html", page);
+    module->sendHtml(page, 200);
     free(page);
-    server.on("/init", [](){
+    server->on("/init", [](){
       Serial.println("Rq on /init");
 //      if(config->isAPInitialized()) {
 //        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
 //        return;
 //      }
       
-      if (!server.hasArg("apSsid")) {
-        sendPage(MSG_ERR_BAD_REQUEST, 403);
+      if (!server->hasArg("apSsid")) {
+        module->sendText(MSG_ERR_BAD_REQUEST, 403);
         return;
       }
-      String adminNumber = server.arg("admin");
+      String adminNumber = server->arg("admin");
       if (adminNumber.length() > 0) {
         if (adminNumber.length() < 10) {
-          sendPage(MSG_ERR_ADMIN_LENGTH, 403);
+          module->sendText(MSG_ERR_ADMIN_LENGTH, 403);
           return;
         }
         config->setAdminNumber(adminNumber);
@@ -292,34 +316,34 @@ void printHomePage() {
       
       // TODO: add checks in the config methods
       // Read and save new AP SSID 
-      String apSsid = server.arg("apSsid");
+      String apSsid = server->arg("apSsid");
       if (apSsid.length() > 0) {
         // TODO: add checks
         config->setApSsid(apSsid);
         wifiDisplay();
       }
       // Read and save new AP PWD 
-      String apPwd = server.arg("apPwd");
+      String apPwd = server->arg("apPwd");
       if( apPwd.length() > 0) {
         // Password need to be at least 8 characters
         if(apPwd.length() < 8) {
-          sendPage(MSG_ERR_PASSWORD_LENGTH, 403);
+          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
           return;
         }
         config->setApPwd(apPwd);
       }
             
       // Read and save home SSID 
-      String homeSsid = server.arg("homeSsid");
+      String homeSsid = server->arg("homeSsid");
       if (homeSsid.length() > 0) {
         config->setHomeSsid(homeSsid);
       }
       // Read and save home PWD 
-      String homePwd = server.arg("homePwd");
+      String homePwd = server->arg("homePwd");
       if( homePwd.length() > 0) {
         // Password need to be at least 8 characters
         if(homePwd.length() < 8) {
-          sendPage(MSG_ERR_PASSWORD_LENGTH, 403);
+          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
           return;
         }
         config->setHomePwd(homePwd);
@@ -339,22 +363,10 @@ void printHomePage() {
       }
       
       printNumbers();
-      sendPage(MSG_INIT_DONE, 200);
+      module->sendText(MSG_INIT_DONE, 200);
       
     });     
   }
-}
-
-void sendPage(const char* msg, int code) {
-  char format[] = "<html><body>%s</body></html>";
-  char* html = (char*)malloc(strlen(msg) + strlen(format) + 1);
-  sprintf(html, format, msg);
-  server.send(code, "text/html", html);
-  free(html); 
-}
-
-void sendJson(const char* msg, int code) {
-  server.send(code, "application/json", msg);
 }
 
 void initDisplay( void ) {
@@ -391,11 +403,19 @@ void wifiDisplay() {
     oledDisplay->setLine(1, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
   }
     
-  strcpy(message, config->getApSsid());
-  strcat(message, " ");
-  IPAddress ipAddress = WiFi.softAPIP();
-  ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
-  oledDisplay->setLine(0, message);
+  if(displayAP && homeWifiConnected) {
+    strcpy(message, config->getHomeSsid());     
+    strcat(message, " ");
+    ipOnHomeSsid.getBytes((byte *)message + strlen(message), 50);
+    oledDisplay->setLine(0, message);
+  } else {
+    strcpy(message, config->getApSsid());
+    strcat(message, " ");
+    IPAddress ipAddress = WiFi.softAPIP();
+    ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
+    oledDisplay->setLine(0, message);
+  }
+  displayAP = !displayAP;
   
   bool blinkWifi = false;
   if (!homeWifiConnected && config->isHomeWifiConfigured()) {
