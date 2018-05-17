@@ -200,7 +200,7 @@ void initServer() {
  * Main Loop
  *********************************/
 void loop() {
-
+  now();  // Needed to refresh the Time lib, so that NTP server is called
   // X seconds after reset, switch to custom AP if set
   if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
     initSoftAP();
@@ -216,7 +216,8 @@ void loop() {
   // Display needs to be refreshed periodically to handle blinking
   oledDisplay->refresh();
 
-  timeNow = now();  // Need to refresh the Time lib, so that NTP server is called
+  
+  timeNow = millis();
   if(timeNow - timeLast >= 1) {
     timeLast = timeNow;
     timeDisplay();
