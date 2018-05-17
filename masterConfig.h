@@ -5,11 +5,12 @@
  */
  
 #pragma once
-
+#include <Arduino.h>
 #include "registeredPhoneNumber.h"
 #include <XIOTConfig.h>
+#include <XUtils.h>
 
-#define CONFIG_VERSION 1
+#define CONFIG_VERSION 4
 #define CONFIG_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
@@ -19,11 +20,9 @@
 #define DEFAULT_GMT_HOUR_OFFSSET 2
 #define DEFAULT_GMT_MIN_OFFSSET 0
 
-typedef struct {
-  // First two members version and name are mandatory
-  unsigned int version;
-  char name[NAME_MAX_LENGTH + 1];
-  
+struct MasterConfigStruct:XEEPROMConfigDataStruct {
+  // First two members version and name are mandatory and inherited from XEEPROMConfigDataStruct
+ 
   // Array to store phone number information, permissions, ...
   phoneNumberDataType registeredNumbers[MAX_PHONE_NUMBERS];
   // Hostname for webapps, statistics, etc
@@ -41,12 +40,12 @@ typedef struct {
   int8_t gmtHourOffset = DEFAULT_GMT_HOUR_OFFSSET;
   int8_t gmtMinOffset = DEFAULT_GMT_MIN_OFFSSET;
   
-} MasterConfigDataType;
+};
 
  
 class MasterConfigClass:public XEEPROMConfigClass {
 public:
-  MasterConfigClass(unsigned int version, const char* name, void* dataPtr);
+  MasterConfigClass(unsigned int version, const char* name);
   virtual void initFromDefault(void) override;
   
   RegisteredPhoneNumberClass* getRegisteredPhoneByNumber(const char* number); 
@@ -79,6 +78,6 @@ public:
   int8_t getGmtMinOffset(); 
   
 protected:
-  MasterConfigDataType* _getConfigPtr(void);
-  RegisteredPhoneNumberClass* _phoneNumbers[MAX_PHONE_NUMBERS];  
+  RegisteredPhoneNumberClass* _phoneNumbers[MAX_PHONE_NUMBERS];
+  MasterConfigStruct* _getDataPtr(void);  
 };

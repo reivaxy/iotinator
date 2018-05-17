@@ -6,10 +6,10 @@
  
 #include "masterConfig.h"
 
-MasterConfigClass::MasterConfigClass(unsigned int version, const char* name, void* dataPtr):XEEPROMConfigClass(version, name, dataPtr, sizeof(MasterConfigDataType)) {
+MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEEPROMConfigClass(version, name, sizeof(MasterConfigStruct)) {
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
-    _phoneNumbers[i] = new RegisteredPhoneNumberClass(&(_getConfigPtr()->registeredNumbers[i]));
+    _phoneNumbers[i] = new RegisteredPhoneNumberClass(&(_getDataPtr()->registeredNumbers[i]));
   }  
 }
 
@@ -25,7 +25,7 @@ void MasterConfigClass::initFromDefault() {
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i]->reset();
   }
-  MasterConfigDataType* configPtr = _getConfigPtr();
+  MasterConfigStruct* configPtr = _getDataPtr();
   XUtils::safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
   configPtr->statPeriod = DEFAULT_STAT_PERIOD;
   configPtr->homeSsid[0] = 0;
@@ -39,7 +39,7 @@ void MasterConfigClass::initFromDefault() {
 }
 
 void MasterConfigClass::setHomeSsid(const char* ssid) {
-  XUtils::safeStringCopy(_getConfigPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
+  XUtils::safeStringCopy(_getDataPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
 }
 void MasterConfigClass::setHomeSsid(String ssidString) {
   char ssid[SSID_MAX_LENGTH];
@@ -47,7 +47,7 @@ void MasterConfigClass::setHomeSsid(String ssidString) {
   setHomeSsid(ssid);
 }
 void MasterConfigClass::setHomePwd(const char* pwd) {
-  XUtils::safeStringCopy(_getConfigPtr()->homePwd, pwd, PWD_MAX_LENGTH);
+  XUtils::safeStringCopy(_getDataPtr()->homePwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setHomePwd(String pwdString) {
   char pwd[PWD_MAX_LENGTH];
@@ -56,7 +56,7 @@ void MasterConfigClass::setHomePwd(String pwdString) {
 }
 
 void MasterConfigClass::setApSsid(const char* ssid) {
-  XUtils::safeStringCopy(_getConfigPtr()->apSsid, ssid, SSID_MAX_LENGTH);
+  XUtils::safeStringCopy(_getDataPtr()->apSsid, ssid, SSID_MAX_LENGTH);
 }
 void MasterConfigClass::setApSsid(String ssidString) {
   char ssid[SSID_MAX_LENGTH];
@@ -64,7 +64,7 @@ void MasterConfigClass::setApSsid(String ssidString) {
   setApSsid(ssid);
 }
 void MasterConfigClass::setApPwd(const char* pwd) {
-  XUtils::safeStringCopy(_getConfigPtr()->apPwd, pwd, PWD_MAX_LENGTH);
+  XUtils::safeStringCopy(_getDataPtr()->apPwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setApPwd(String pwdString) {
   char pwd[PWD_MAX_LENGTH];
@@ -72,32 +72,32 @@ void MasterConfigClass::setApPwd(String pwdString) {
   setApPwd(pwd);
 }
 char* MasterConfigClass::getHomeSsid(void) {
-   return _getConfigPtr()->homeSsid;
+   return _getDataPtr()->homeSsid;
 }
 char* MasterConfigClass::getHomePwd(void) {
-   return _getConfigPtr()->homePwd;
+   return _getDataPtr()->homePwd;
 }
 
 // For the first 60 seconds the default AP is opened
 char* MasterConfigClass::getApSsid(bool force) {
   if(force || millis() > getDefaultAPExposition())
-    return _getConfigPtr()->apSsid;
+    return _getDataPtr()->apSsid;
   else 
     return (char *)DEFAULT_APSSID;
 }
 // For the first 60 seconds the default AP is opened
 char* MasterConfigClass::getApPwd(bool force) {
   if(force || millis() > getDefaultAPExposition())
-    return _getConfigPtr()->apPwd;
+    return _getDataPtr()->apPwd;
   else
     return (char *)DEFAULT_APPWD; 
 }
 
 void MasterConfigClass::setDefaultAPExposition(int msDelay) {
-  _getConfigPtr()->defaultAPExposition = msDelay;
+  _getDataPtr()->defaultAPExposition = msDelay;
 }
 int MasterConfigClass::getDefaultAPExposition(void) {
-  return _getConfigPtr()->defaultAPExposition;
+  return _getDataPtr()->defaultAPExposition;
 }
   
 void MasterConfigClass::setAdminNumber(char *number) {
@@ -115,14 +115,14 @@ void MasterConfigClass::setAdminNumber(String numberString) {
 }
 
 void MasterConfigClass::setGmtOffset(int8_t hour, int8_t min) {
-  _getConfigPtr()->gmtHourOffset = hour;
-  _getConfigPtr()->gmtMinOffset = min;
+  _getDataPtr()->gmtHourOffset = hour;
+  _getDataPtr()->gmtMinOffset = min;
 } 
 int8_t MasterConfigClass::getGmtHourOffset() {
-  return _getConfigPtr()->gmtHourOffset;
+  return _getDataPtr()->gmtHourOffset;
 } 
 int8_t MasterConfigClass::getGmtMinOffset() {
-  return _getConfigPtr()->gmtMinOffset;
+  return _getDataPtr()->gmtMinOffset;
 }
 
 // The home Wifi is configured if its ssid is not an empty string...  
@@ -135,7 +135,7 @@ bool MasterConfigClass::isHomeWifiConfigured() {
 
 // The AP is configured if its password is not the default password.
 bool MasterConfigClass::isAPInitialized() {
-  if(strcmp(_getConfigPtr()->apPwd, DEFAULT_APPWD) != 0) {
+  if(strcmp(_getDataPtr()->apPwd, DEFAULT_APPWD) != 0) {
     return true;
   }
   return false;
@@ -166,6 +166,6 @@ RegisteredPhoneNumberClass* MasterConfigClass::getRegisteredPhoneByNumber(const 
  * Return the typed data structure object
  *
  */
-MasterConfigDataType* MasterConfigClass::_getConfigPtr(void) {
-  return (MasterConfigDataType*)getData();
+MasterConfigStruct* MasterConfigClass::_getDataPtr(void) {
+  return (MasterConfigStruct*)XEEPROMConfigClass::_getDataPtr();
 }
