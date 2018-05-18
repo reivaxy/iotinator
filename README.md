@@ -3,19 +3,24 @@ The global multipurpose home iot solution.
 
 This is the master module of the iotinator framework.
 
+Its goal is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication.
 
-It runs on esp8266 hardware (Investigating esp32 hardware too), connected to a SIM800 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
+Example of such devices are: light or heater switch, weather station, water detector, smoke detector, movement detector, aquarium monitoring (much like https://github.com/reivaxy/aquaMonitor).
 
-It connects to a domestic Wifi network and exposes a "private" Wifi network to communicate with slave modules.
+It runs on esp8266 hardware (will investigate esp32 hardware too), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
 
-It defines APIs to communicate with the modules, and dispatches and forwards SMS to them, and sends their responses back.
+It defines APIs to communicate with the modules, and dispatches and forwards messages received by SMS to them, and sends their responses back.
 
 It also provides an API so that modules can record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
 
-Configuration is persisted in EEPROM.
+It connects to a domestic Wifi network and exposes a "private" Wifi network to communicate with slave modules.
+
+Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
 
 Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled. Current time is fetched from NTP servers once Home Wifi is configured and connected.
+
+GSM will be an option, the framework being able to work just using internet.
 
 You'll need to clone these repositories into your arduino "libraries" directory to be able to compile:
 
