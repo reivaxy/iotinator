@@ -17,6 +17,7 @@
 
 #include "initPageHtml.h"
 #include "masterConfig.h"
+#include "SlaveCollection.h"
 
 #define TIME_STR_LENGTH 100
 
@@ -46,6 +47,7 @@ MDNSResponder mdns;
 time_t timeNow = 0; 
 time_t _timeLastTimeDisplay = 0;
 time_t _timeLastTimeWifi = 0;
+SlaveCollection *slaveCollection;
 
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
 // that we want to reuse here :) 
@@ -78,13 +80,15 @@ void setup(){
   oledDisplay = new DisplayClass(0x3C, D5, D6);
   initDisplay();
 
+  // Initialize the Slave Collection 
+  slaveCollection = new SlaveCollection(oledDisplay, module);
+  
   // After a reset, open Default Access Point
   // If Access Point was customized, we'll switch to it after one minute
   // This is supposed to give slave modules time to initialize.
   initSoftAP();
   
-  // If Home wifi was configured previously, module is both Access Point and Station
-  // And connect to Home Wifi.
+  // If Home wifi was configured previously, module should connect to Home Wifi.
   if(config->isHomeWifiConfigured()) {
     Serial.print(MSG_WIFI_CONNECTING_HOME);
     Serial.println(config->getHomeSsid());
@@ -105,7 +109,7 @@ void setup(){
 }
 
 // Opens the Wifi network Access Point.
-// For the first 60 seconds, it is the default one, then the custom one if configured.
+// For the first X seconds, it is the default one, then the custom one if configured.
 void initSoftAP() {
   Serial.print(MSG_WIFI_OPENING_AP);
   Serial.println(config->getApSsid());
@@ -175,6 +179,7 @@ void initServer() {
   server->on("/api/config", [](){
 //    Serial.println("Rq on /api/config");
     char configMsg[CONFIG_PAYLOAD_SIZE];
+    // TODO: Use dynamic buffer ?
     StaticJsonBuffer<CONFIG_PAYLOAD_SIZE> jsonBuffer;    
     // Create the root object
     JsonObject& root = jsonBuffer.createObject();
@@ -196,20 +201,35 @@ void initServer() {
   server->on("/api/register",  [](){
     char message[100];
     Serial.println("Registering module");
-    Serial.println(server->arg("plain"));
-    sprintf(message, "Registering %s", "toto" );
+    String jsonBody = server->arg("plain"); // Hahaaaa !
+//    Serial.println(jsonBody);
+    // TODO: use a dynamic buffer ? 
+    StaticJsonBuffer<100> jsonBuffer; 
+    JsonObject& root = jsonBuffer.parseObject(jsonBody); 
+    if (!root.success()) {
+      Serial.println("Registration failure");
+      module->sendJson("{}", 500);
+      oledDisplay->setLine(1, "Registration failed", TRANSIENT, NOT_BLINKING);
+      return;
+    }
+    sprintf(message, "Registering %s", (const char*)root["name"] );
     oledDisplay->setLine(1, message, TRANSIENT, NOT_BLINKING);
-    module->sendText("ok", 200);
+    
+    Slave* slave = slaveCollection->add((const char*)root[XIOTModuleJsonTag::name], 
+                                       (const char*)root[XIOTModuleJsonTag::slaveIP]);
+    
+    Serial.printf("New slave count: %d\n", slaveCollection->getCount());
+    module->sendJson("{}", 200);
   });
 
   
   // TODO: remove this or make it better. Needed during dev
   // reset may be only possible by SMS from admin number ?
-  server->on("/reset", [](){
-    Serial.println("Rq on /reset");
+  server->on("/api/reset", [](){
+    Serial.println("Rq on /reset master");
     config->initFromDefault();
     config->saveToEeprom();
-    module->sendText("Reset Done", 200);
+    module->sendJson("{}", 200);
     gsm.sendSMS(config->getAdminNumber(), "Reset done");  // 
     WiFi.mode(WIFI_AP);
     initSoftAP();  
@@ -225,8 +245,8 @@ void loop() {
   now();  // Needed to refresh the Time lib, so that NTP server is called
   // X seconds after reset, switch to custom AP if set
   if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
-    initSoftAP();
     defaultAP = false;
+    initSoftAP();
   }
   // Check if any request to serve
   server->handleClient();

@@ -32,3 +32,8 @@ TODO: list the libraries :)
 Picture of the early prototype:
 
 <img src="resources/prototype.jpg" width="400px"/>
+
+Picture of the swarm: one master, two slaves:
+
+<img src="resources/swarm.jpg" width="400px"/>
+
