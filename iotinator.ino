@@ -194,14 +194,17 @@ void initServer() {
    * This endpoints allows slave modules to register themselves to master
    */
   server->on("/api/register",  [](){
-    Serial.println("Rq on /api/register");
-    oledDisplay->setLine(1, "Registering module", TRANSIENT, NOT_BLINKING);
+    char message[100];
+    Serial.println("Registering module");
     Serial.println(server->arg("plain"));
+    sprintf(message, "Registering %s", "toto" );
+    oledDisplay->setLine(1, message, TRANSIENT, NOT_BLINKING);
     module->sendText("ok", 200);
   });
 
   
   // TODO: remove this or make it better. Needed during dev
+  // reset may be only possible by SMS from admin number ?
   server->on("/reset", [](){
     Serial.println("Rq on /reset");
     config->initFromDefault();
@@ -293,6 +296,8 @@ void printHomePage() {
     free(page);
     server->on("/init", [](){
       Serial.println("Rq on /init");
+      // TODO: /init might need to be disabled once done ?
+
 //      if(config->isAPInitialized()) {
 //        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
 //        return;
