@@ -25,15 +25,17 @@ typedef std::pair <std::string, Slave*>  slavePair;
 
 class SlaveCollection {
 public:
-  SlaveCollection(DisplayClass *oledDisplay, XIOTModule* module);
+  SlaveCollection(XIOTModule* module);
   Slave* add(const char* name, const char* ip);
   void remove(const char* ip);
   void ping();  // ping every slave
   void reset(); // reset every slave
+  void list();  // list slaves on Serial
   int getCount();
+  void renameOne(Slave *slave);
+  bool alreadyExists(const char* name, const char* ip);
 
 protected:
   slaveMap _slaves;
-  DisplayClass* _oledDisplay;
   XIOTModule* _module;  
 };

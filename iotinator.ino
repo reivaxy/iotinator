@@ -48,6 +48,7 @@ time_t timeNow = 0;
 time_t _timeLastTimeDisplay = 0;
 time_t _timeLastTimeWifi = 0;
 SlaveCollection *slaveCollection;
+Slave* slaveToRename = NULL;
 
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
 // that we want to reuse here :) 
@@ -69,19 +70,20 @@ void setup(){
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME);
   config->init();
   Serial.println(config->getName());
-  
-  module = new XIOTModule();
-  initServer();
-  
-  // Before checking for Home Wifi configuration, module is Wifi Access Point only
-  WiFi.mode(WIFI_AP);
 
   // Initialise the OLED display
   oledDisplay = new DisplayClass(0x3C, D5, D6);
   initDisplay();
+  
+  // Beware the module instantiation initializes the server
+  module = new XIOTModule(oledDisplay);
+  addEndpoints();
+  
+  // Before checking for Home Wifi configuration, module is Wifi Access Point only
+  WiFi.mode(WIFI_AP);
 
   // Initialize the Slave Collection 
-  slaveCollection = new SlaveCollection(oledDisplay, module);
+  slaveCollection = new SlaveCollection(module);
   
   // After a reset, open Default Access Point
   // If Access Point was customized, we'll switch to it after one minute
@@ -164,7 +166,7 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
   }
 }
 
-void initServer() {
+void addEndpoints() {
   server = module->getServer();  
   server->on("/", [](){
     printHomePage();
@@ -218,6 +220,9 @@ void initServer() {
     Slave* slave = slaveCollection->add((const char*)root[XIOTModuleJsonTag::name], 
                                        (const char*)root[XIOTModuleJsonTag::slaveIP]);
     
+    if(slave->getToRename()) {
+      slaveToRename = slave;
+    }
     Serial.printf("New slave count: %d\n", slaveCollection->getCount());
     module->sendJson("{}", 200);
   });
@@ -248,6 +253,13 @@ void loop() {
     defaultAP = false;
     initSoftAP();
   }
+  
+  // check if any new added slave needs to be renamed
+  if(slaveToRename != NULL) {
+    slaveCollection->renameOne(slaveToRename);
+    slaveToRename = NULL;
+  }
+  
   // Check if any request to serve
   server->handleClient();
  
@@ -271,6 +283,9 @@ void loop() {
     _timeLastTimeWifi = timeNow;
     // refresh wifi display every Xs to display both ssid/ips alternatively
     wifiDisplay();
+    
+    // TODO: comment
+    slaveCollection->list();
   }      
   delay(20);
   
