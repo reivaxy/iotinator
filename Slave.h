@@ -10,7 +10,7 @@
 #include <XIOTModule.h>
 #include <XUtils.h>
 
-#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
+//#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -29,6 +29,12 @@ public:
   bool getPong();
   void setToRename(bool flag);
   bool getToRename();
+  /**
+   * Modules powered by batteries should take advantage of the sleep feature.
+   * They should not be 'pinged' by master
+   */
+  bool getCanSleep();
+  void setCanSleep(bool);
   void renameTo(const char* newName);
 protected:   
 
@@ -37,5 +43,6 @@ protected:
   bool _pong = false;  // Is true if last ping was successful
   XIOTModule* _module;
   bool _toRename = false; // if true, module must be renamed 
+  bool _canSleep = false; // if true, module must not be pinged 
 
 }; 

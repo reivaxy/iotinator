@@ -19,10 +19,25 @@ int SlaveCollection::getCount() {
  * Register a new slave
  * BEWARE: we are in a server GET processing callback: do not attempt any outgoing request.
  * (no ping, no slave renaming here)
+ * data from jsonStr needs to be copied, since it will be freed
  */ 
-Slave* SlaveCollection::add(const char* name, const char* ip) {
+Slave* SlaveCollection::add(String jsonStr) {
+  StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; 
+  JsonObject& root = jsonBuffer.parseObject(jsonStr); 
+  if (!root.success()) {
+    Serial.println("Registration failure");
+    _module->sendJson("{}", 500);
+    return NULL;
+  }
+  const char *name = (const char*)root[XIOTModuleJsonTag::name]; 
+  const char *ip = (const char*)root[XIOTModuleJsonTag::slaveIP];
   Debug("SlaveCollection::add name '%s', ip '%s'\n", name, ip);
+  char message[100];
+  sprintf(message, "Registering %s", name);
+  _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);
   Slave* slave = new Slave(name, ip, _module);
+  
+  slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
   
   // Insert it. If already inserted (same ip), get the one already inserted
   // If not already inserted, get the one we just inserted. So that name compare and flag setting work
@@ -41,10 +56,22 @@ Slave* SlaveCollection::add(const char* name, const char* ip) {
   return slave;
 }
 
-void SlaveCollection::list() {
+JsonObject& SlaveCollection::list() {
+  // Size estimation: https://arduinojson.org/assistant/
+  int size = getCount();
+  Debug("SlaveCollection::list %d slaves\n", size);
+  const size_t bufferSize = size*JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(size);
+  
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+  JsonObject& root = jsonBuffer.createObject();
+  
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
-    Serial.printf("Name '%s' on ip '%s'\n", it->second->getName(), it->second->getIP());
-  } 
+    JsonObject& slave = root.createNestedObject(it->second->getIP());
+    slave[XIOTModuleJsonTag::name] = it->second->getName();
+    slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
+    Debug("Name '%s' on ip '%s'\n", it->second->getName(), it->second->getIP());
+  }
+  return root; 
 }
 
 void SlaveCollection::renameOne(Slave *slave) {
@@ -65,7 +92,7 @@ void SlaveCollection::renameOne(Slave *slave) {
   }
   
   while (!ok && strlen(newName) < NAME_MAX_LENGTH) {
-    sprintf(newName, "%s_%d", alpha, digit +1);
+    sprintf(newName, "%s_%d", alpha, ++digit);
     Debug("Testing name %s\n", newName);   
     if(!alreadyExists(newName, slave->getIP())) {
       ok = true;
@@ -85,7 +112,7 @@ void SlaveCollection::renameOne(Slave *slave) {
 bool SlaveCollection::alreadyExists(const char* name, const char* ip) {
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
     if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getIP(), ip) != 0))  {
-      Serial.printf("Found duplicate %s on ip %s\n", name, it->second->getIP());
+      Debug("Found duplicate %s on ip %s\n", name, it->second->getIP());
       return true;
     }
   }

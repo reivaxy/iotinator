@@ -65,6 +65,7 @@ String ipOnHomeSsid;
 // TODO: a lot of common code.
 
 void setup(){
+  WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
   delay(100);
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME);
@@ -79,15 +80,14 @@ void setup(){
   module = new XIOTModule(oledDisplay);
   addEndpoints();
   
-  // Before checking for Home Wifi configuration, module is Wifi Access Point only
-  WiFi.mode(WIFI_AP);
-
   // Initialize the Slave Collection 
   slaveCollection = new SlaveCollection(module);
   
   // After a reset, open Default Access Point
   // If Access Point was customized, we'll switch to it after one minute
   // This is supposed to give slave modules time to initialize.
+  // Before checking for Home Wifi configuration, module is Wifi Access Point only
+  WiFi.mode(WIFI_AP);
   initSoftAP();
   
   // If Home wifi was configured previously, module should connect to Home Wifi.
@@ -172,6 +172,19 @@ void addEndpoints() {
     printHomePage();
   });
 
+  server->on("/api/list", [](){
+    int size = slaveCollection->getCount();
+    int bufferSize = size * DOUBLE_IP_MAX_LENGTH; // the IPs, possibly "extended"
+    bufferSize += size * NAME_MAX_LENGTH; // the module names
+    bufferSize += size*11; // comas, double quotes, semi colons, brackets
+    // Should be enough since most IP and names will be smaller
+    char *moduleListStr = (char *)malloc(bufferSize); 
+    JsonObject& root = slaveCollection->list();
+    root.printTo(moduleListStr, bufferSize-1);
+    module->sendJson(moduleListStr, 200);
+    free(moduleListStr);    
+  });
+  
   /**
    * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
    * NB: only 4 clients  can connect (TODO: to check!) 
@@ -180,9 +193,8 @@ void addEndpoints() {
    **/
   server->on("/api/config", [](){
 //    Serial.println("Rq on /api/config");
-    char configMsg[CONFIG_PAYLOAD_SIZE];
-    // TODO: Use dynamic buffer ?
-    StaticJsonBuffer<CONFIG_PAYLOAD_SIZE> jsonBuffer;    
+    char configMsg[JSON_STRING_CONFIG_SIZE];
+    StaticJsonBuffer<JSON_BUFFER_CONFIG_SIZE> jsonBuffer;    
     // Create the root object
     JsonObject& root = jsonBuffer.createObject();
     root[XIOTModuleJsonTag::version] = API_VERSION ;
@@ -201,30 +213,22 @@ void addEndpoints() {
    * This endpoints allows slave modules to register themselves to master
    */
   server->on("/api/register",  [](){
-    char message[100];
+    char *jsonString;
     Serial.println("Registering module");
-    String jsonBody = server->arg("plain"); // Hahaaaa !
-//    Serial.println(jsonBody);
-    // TODO: use a dynamic buffer ? 
-    StaticJsonBuffer<100> jsonBuffer; 
-    JsonObject& root = jsonBuffer.parseObject(jsonBody); 
-    if (!root.success()) {
-      Serial.println("Registration failure");
+    XUtils::stringToCharP(server->arg("plain"), &jsonString);
+    // slaveCollection->add method need to copy the data since jsonString will be freed.  
+    Slave* slave = slaveCollection->add(jsonString);
+    free(jsonString);
+    if(slave == NULL) {
       module->sendJson("{}", 500);
       oledDisplay->setLine(1, "Registration failed", TRANSIENT, NOT_BLINKING);
-      return;
+    } else {
+      module->sendJson("{}", 200);
+      if(slave->getToRename()) {
+        slaveToRename = slave;
+      }
     }
-    sprintf(message, "Registering %s", (const char*)root["name"] );
-    oledDisplay->setLine(1, message, TRANSIENT, NOT_BLINKING);
-    
-    Slave* slave = slaveCollection->add((const char*)root[XIOTModuleJsonTag::name], 
-                                       (const char*)root[XIOTModuleJsonTag::slaveIP]);
-    
-    if(slave->getToRename()) {
-      slaveToRename = slave;
-    }
-    Serial.printf("New slave count: %d\n", slaveCollection->getCount());
-    module->sendJson("{}", 200);
+    Serial.printf("New slave count: %d\n", slaveCollection->getCount());    
   });
 
   
@@ -284,8 +288,6 @@ void loop() {
     // refresh wifi display every Xs to display both ssid/ips alternatively
     wifiDisplay();
     
-    // TODO: comment
-    slaveCollection->list();
   }      
   delay(20);
   
