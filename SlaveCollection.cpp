@@ -25,7 +25,7 @@ Slave* SlaveCollection::add(String jsonStr) {
   StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; 
   JsonObject& root = jsonBuffer.parseObject(jsonStr); 
   if (!root.success()) {
-    Serial.println("Registration failure");
+    Serial.println("Registration: parse failure");
     _module->sendJson("{}", 500);
     return NULL;
   }
@@ -36,9 +36,6 @@ Slave* SlaveCollection::add(String jsonStr) {
   sprintf(message, "Registering %s", name);
   _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);
   Slave* slave = new Slave(name, ip, _module);
-  
-  slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
-  
   // Insert it. If already inserted (same ip), get the one already inserted
   // If not already inserted, get the one we just inserted. So that name compare and flag setting work
   std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(ip, slave));
@@ -46,6 +43,9 @@ Slave* SlaveCollection::add(String jsonStr) {
   if(!slaveIt.second) {
     slave = slaveIt.first->second;
   }
+  // We need to update some fields...  
+  slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
+  slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
   
   slave->setName(name); // in case it's a new name for an already registered module.
   // check if one OTHER (not same IP) already registered module already has this name
@@ -56,11 +56,12 @@ Slave* SlaveCollection::add(String jsonStr) {
   return slave;
 }
 
-JsonObject& SlaveCollection::list() {
+void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   // Size estimation: https://arduinojson.org/assistant/
   int size = getCount();
   Debug("SlaveCollection::list %d slaves\n", size);
-  const size_t bufferSize = size*JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(size);
+  // plan for 5 fields per slave
+  const size_t bufferSize = size*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(size);
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
   JsonObject& root = jsonBuffer.createObject();
@@ -69,9 +70,13 @@ JsonObject& SlaveCollection::list() {
     JsonObject& slave = root.createNestedObject(it->second->getIP());
     slave[XIOTModuleJsonTag::name] = it->second->getName();
     slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
+    char *custom = (char *)it->second->getCustom();
+    if(custom != NULL) {
+      slave[XIOTModuleJsonTag::custom] = custom;    
+    }
     Debug("Name '%s' on ip '%s'\n", it->second->getName(), it->second->getIP());
   }
-  return root; 
+  root.printTo(strBuffer, strBufferSize-1);
 }
 
 void SlaveCollection::renameOne(Slave *slave) {

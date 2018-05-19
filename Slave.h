@@ -10,7 +10,7 @@
 #include <XIOTModule.h>
 #include <XUtils.h>
 
-//#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
+#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -21,6 +21,7 @@
 class Slave {
 public:
   Slave(const char *name, const char* ip, XIOTModule* module);
+  ~Slave();
   bool ping(); // ping this slave
   void reset(); // reset this slave
   void setName(const char*);
@@ -35,6 +36,8 @@ public:
    */
   bool getCanSleep();
   void setCanSleep(bool);
+  void setCustom(const char*);
+  const char* getCustom();
   void renameTo(const char* newName);
 protected:   
 
@@ -44,5 +47,6 @@ protected:
   XIOTModule* _module;
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
+  char * _custom = NULL; // custom data sent by module at registration 
 
 }; 

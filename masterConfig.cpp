@@ -21,8 +21,8 @@ MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEE
  * NB: version and name are handled by base class 
  */
 void MasterConfigClass::initFromDefault() {
-  XEEPROMConfigClass::initFromDefault(); // handles version and name init
-  
+  XEEPROMConfigClass::initFromDefault(); // handles version init
+  setName(CONFIG_NAME);
   // Reset all registered phone numbers
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i]->reset();

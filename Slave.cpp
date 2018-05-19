@@ -16,6 +16,10 @@ Slave::Slave(const char* name, const char* ip, XIOTModule* module) {
   _module = module;
 }
 
+Slave::~Slave() {
+  if(_custom != NULL) free(_custom);
+}
+
 const char* Slave::getName() {
   Debug("Slave::getName\n");
   return _name;
@@ -47,6 +51,24 @@ bool Slave::getCanSleep() {
 
 void Slave::setCanSleep(bool canSleep) {
   _canSleep = canSleep;
+}
+
+void Slave::setCustom(const char *custom) {
+  if(_custom != NULL) {
+    free(_custom); // This field is manually allocated, so it must be freed.
+    _custom = NULL;
+  }
+  if(custom == NULL) {
+    _custom = NULL;
+    return;
+  }
+  int size = strlen(custom) + 1;
+  _custom = (char *)malloc(size);   // Will need to be freed, when we unregister slave, or overwrite one...
+  XUtils::safeStringCopy(_custom, custom, size);
+}
+
+const char* Slave::getCustom() {
+  return _custom;
 }
 
 void Slave::renameTo(const char* newName) {

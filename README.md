@@ -22,6 +22,9 @@ Waiting to solve stability issues with cheap GSM boards, gsm handling has been d
 
 GSM will be an option, the framework being able to work just using internet.
 
+But GSM is nice in case of power outage (modules can have batteries, but my box doesn't), and also to handle security
+(sending codes to validate authentication for instance)
+
 You'll need to clone these repositories into your arduino "libraries" directory to be able to compile:
 
 - https://github.com/reivaxy/XOLEDDisplay.git 

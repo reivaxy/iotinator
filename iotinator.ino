@@ -128,6 +128,9 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
   Serial.println(MSG_WIFI_STATION_DISCONNECTED);
   oledDisplay->setLine(1, MSG_WIFI_STATION_DISCONNECTED, TRANSIENT, NOT_BLINKING);
+  // TODO: remove it from slave collection ? 
+  // Disconnection needs a long time to be triggered (15mn ?)
+  // May be periodic ping should be enough ?
 }
 
 // Called when STA is connected to home wifi and IP was obtained
@@ -136,7 +139,7 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
   wifiDisplay();
-  NTP.setInterval(3600);
+  NTP.setInterval(7200);
   NTP.begin();
   NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
   NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
@@ -179,8 +182,7 @@ void addEndpoints() {
     bufferSize += size*11; // comas, double quotes, semi colons, brackets
     // Should be enough since most IP and names will be smaller
     char *moduleListStr = (char *)malloc(bufferSize); 
-    JsonObject& root = slaveCollection->list();
-    root.printTo(moduleListStr, bufferSize-1);
+    slaveCollection->list(moduleListStr, bufferSize);
     module->sendJson(moduleListStr, 200);
     free(moduleListStr);    
   });
@@ -205,7 +207,7 @@ void addEndpoints() {
     root[XIOTModuleJsonTag::homeWifiConnected] = homeWifiConnected;
     root[XIOTModuleJsonTag::gsmEnabled] = gsmEnabled;
     root[XIOTModuleJsonTag::timeInitialized] = ntpServerInitialized;
-    root.printTo(configMsg, CONFIG_PAYLOAD_SIZE-1);
+    root.printTo(configMsg, JSON_STRING_CONFIG_SIZE);
     module->sendJson(configMsg, 200);
   });
 
