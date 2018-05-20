@@ -11,7 +11,7 @@
 #include "Slave.h"
 #include <map>
 
-#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
+//#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE_COLLECTION
 #define Debug(...) Serial.printf(__VA_ARGS__)

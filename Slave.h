@@ -10,7 +10,7 @@
 #include <XIOTModule.h>
 #include <XUtils.h>
 
-#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
+//#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE
 #define Debug(...) Serial.printf(__VA_ARGS__)
