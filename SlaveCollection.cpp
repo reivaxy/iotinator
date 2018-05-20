@@ -97,6 +97,11 @@ void SlaveCollection::ping() {
       Serial.printf("Ping module '%s' on ip '%s'\n", name, ip);
       bool result = it->second->ping();
       Serial.printf("Result: %s\n", result?"true":"false");
+      if(!result) {
+        char message[100];
+        sprintf(message, "Ping failed: %s", name);
+        _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);      
+      }
     } else {
       Serial.printf("Not ping module '%s' on ip '%s' (canSleep)\n", name, ip);
     }

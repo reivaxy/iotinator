@@ -502,8 +502,8 @@ void loop() {
     wifiDisplay();    
   }
   
-  // TODO: ping every minute only      
-  if(timeNow - timeLastPing >= 5000) {
+  // TODO: ping every ? minute only      
+  if(timeNow - timeLastPing >= 60000) {
     timeLastPing = timeNow; 
     slaveCollection->ping();
   } 
