@@ -150,9 +150,8 @@ void initSoftAP() {
 }
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-  Serial.println(MSG_WIFI_STATION_CONNECTED);
-  Serial.printf("Mac %02x:%02x:%02x:%02x:%02x:%02x\n", evt.mac[0], evt.mac[1], evt.mac[2], evt.mac[3], evt.mac[4], evt.mac[5]);
   oledDisplay->setLine(1, MSG_WIFI_STATION_CONNECTED, TRANSIENT, NOT_BLINKING);
+  Serial.printf("Mac %02x:%02x:%02x:%02x:%02x:%02x\n", evt.mac[0], evt.mac[1], evt.mac[2], evt.mac[3], evt.mac[4], evt.mac[5]);
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
