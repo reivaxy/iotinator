@@ -21,16 +21,17 @@ int SlaveCollection::getCount() {
  * (no ping, no slave renaming here)
  * data from jsonStr needs to be copied, since it will be freed
  */ 
-Slave* SlaveCollection::add(String jsonStr) {
+Slave* SlaveCollection::add(char* jsonStr) {
   StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; 
   JsonObject& root = jsonBuffer.parseObject(jsonStr); 
   if (!root.success()) {
-    Serial.println("Registration: parse failure");
+    Serial.println("Registration: parse failure for:");
+    Serial.println(jsonStr);
     _module->sendJson("{}", 500);
     return NULL;
   }
   const char *name = (const char*)root[XIOTModuleJsonTag::name]; 
-  const char *ip = (const char*)root[XIOTModuleJsonTag::slaveIP];
+  const char *ip = (const char*)root[XIOTModuleJsonTag::ip];
   Debug("SlaveCollection::add name '%s', ip '%s'\n", name, ip);
   char message[100];
   sprintf(message, "Registering %s", name);
@@ -57,11 +58,12 @@ Slave* SlaveCollection::add(String jsonStr) {
 }
 
 void SlaveCollection::list(char *strBuffer, int strBufferSize) {
-  // Size estimation: https://arduinojson.org/assistant/
   int size = getCount();
   Debug("SlaveCollection::list %d slaves\n", size);
-  // plan for 5 fields per slave
-  const size_t bufferSize = size*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(size);
+  
+  // Size estimation: https://arduinojson.org/assistant/
+  // plan for 10 fields per slave
+  const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
   JsonObject& root = jsonBuffer.createObject();
@@ -70,6 +72,7 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
     JsonObject& slave = root.createNestedObject(it->second->getIP());
     slave[XIOTModuleJsonTag::name] = it->second->getName();
     slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
+    slave[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       slave[XIOTModuleJsonTag::custom] = custom;    
@@ -78,6 +81,28 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   }
   root.printTo(strBuffer, strBufferSize-1);
 }
+
+void SlaveCollection::ping() {
+  int size = getCount();
+  Debug("SlaveCollection::ping %d slaves -----------------\n", size);
+  bool canSleep;  // If true, must not be pinged
+  const char *ip, *name;
+  
+  
+  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
+    ip = it->second->getIP();
+    name = it->second->getName();
+    canSleep = (bool)it->second->getCanSleep();
+    if(!canSleep) {
+      Serial.printf("Ping module '%s' on ip '%s'\n", name, ip);
+      bool result = it->second->ping();
+      Serial.printf("Result: %s\n", result?"true":"false");
+    } else {
+      Serial.printf("Not ping module '%s' on ip '%s' (canSleep)\n", name, ip);
+    }
+  }
+}
+
 
 void SlaveCollection::renameOne(Slave *slave) {
   Debug("SlaveCollection::renameOne");

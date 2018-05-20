@@ -10,7 +10,7 @@
 #include <XIOTModule.h>
 #include <XUtils.h>
 
-#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
+//#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -39,6 +39,7 @@ public:
   void setCustom(const char*);
   const char* getCustom();
   void renameTo(const char* newName);
+  
 protected:   
 
   char _ip[DOUBLE_IP_MAX_LENGTH]; // for modules connected to a slave's AP, store 2 ips

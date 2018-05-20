@@ -18,7 +18,9 @@
 #include "initPageHtml.h"
 #include "masterConfig.h"
 #include "SlaveCollection.h"
-
+extern "C" {
+  #include "user_interface.h"
+}
 #define TIME_STR_LENGTH 100
 
 #define API_VERSION "1.0"    // modules can check API version to make sure they are compatible...
@@ -45,13 +47,16 @@ unsigned long elapsed2s = 0;
 bool gsmEnabled = false;
 MDNSResponder mdns;
 time_t timeNow = 0; 
-time_t _timeLastTimeDisplay = 0;
-time_t _timeLastTimeWifi = 0;
+time_t timeLastTimeDisplay = 0;
+time_t timeLastWifiDisplay = 0;
+time_t timeLastPing = 0;
 SlaveCollection *slaveCollection;
 Slave* slaveToRename = NULL;
 
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
 // that we want to reuse here :) 
+// TODO: when XIOTModule class can handle AP_STA, use it here to get rid of
+// TODO: a lot of common code.
 XIOTModule* module; 
 
 // Handlers will work as long as these variables exists. 
@@ -61,10 +66,34 @@ bool defaultAP = true;
 bool displayAP = false;
 String ipOnHomeSsid;
 
-// TODO: when XIOTModule class can handle AP_STA, use it here to get rid of
-// TODO: a lot of common code.
+// Arbitrary "security" additional buffer size. 
+#define LIST_BUFFER_SIZE 100
+int listBufferSize = LIST_BUFFER_SIZE ;
 
-void setup(){
+/**
+ * Compute the buffer size to hold one attribute, its value and json syntax elements, for all registered modules
+ **/
+int jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) { 
+  // size of the value of the attribute + size of its name + 2 double quotes + semi colon + coma 
+  return moduleCount * (valueSize + strlen(attrName) + 2 + 1 + 1);
+}
+
+/**
+ * Compute the buffer size to hold the json string listing all registered slave modules
+ **/
+void refreshListBufferSize() {
+  int moduleCount = slaveCollection->getCount();
+  listBufferSize = LIST_BUFFER_SIZE;
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH);
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5);  // true or false
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pong, 5); // true or false
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH);
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH);
+  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::custom, MAX_CUSTOM_DATA_SIZE);
+}
+
+
+void setup() {
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
   delay(100);
@@ -122,6 +151,7 @@ void initSoftAP() {
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
   Serial.println(MSG_WIFI_STATION_CONNECTED);
+  Serial.printf("Mac %02x:%02x:%02x:%02x:%02x:%02x\n", evt.mac[0], evt.mac[1], evt.mac[2], evt.mac[3], evt.mac[4], evt.mac[5]);
   oledDisplay->setLine(1, MSG_WIFI_STATION_CONNECTED, TRANSIENT, NOT_BLINKING);
 }
 
@@ -176,15 +206,15 @@ void addEndpoints() {
   });
 
   server->on("/api/list", [](){
-    int size = slaveCollection->getCount();
-    int bufferSize = size * DOUBLE_IP_MAX_LENGTH; // the IPs, possibly "extended"
-    bufferSize += size * NAME_MAX_LENGTH; // the module names
-    bufferSize += size*11; // comas, double quotes, semi colons, brackets
-    // Should be enough since most IP and names will be smaller
-    char *moduleListStr = (char *)malloc(bufferSize); 
-    slaveCollection->list(moduleListStr, bufferSize);
+    // listBufferSize is updated when a slave registers
+    char *moduleListStr = (char *)malloc(listBufferSize); 
+    slaveCollection->list(moduleListStr, listBufferSize);
     module->sendJson(moduleListStr, 200);
-    free(moduleListStr);    
+    Serial.printf("Reserved size: %d, actual size: %d\n", listBufferSize, strlen(moduleListStr));
+    free(moduleListStr); 
+
+    uint32_t freeMem = system_get_free_heap_size();
+    Serial.printf("Free heap mem: %d\n", freeMem);   
   });
   
   /**
@@ -217,6 +247,7 @@ void addEndpoints() {
   server->on("/api/register",  [](){
     char *jsonString;
     Serial.println("Registering module");
+    // This will allocate jsonString
     XUtils::stringToCharP(server->arg("plain"), &jsonString);
     // slaveCollection->add method need to copy the data since jsonString will be freed.  
     Slave* slave = slaveCollection->add(jsonString);
@@ -229,6 +260,7 @@ void addEndpoints() {
       if(slave->getToRename()) {
         slaveToRename = slave;
       }
+      refreshListBufferSize();
     }
     Serial.printf("New slave count: %d\n", slaveCollection->getCount());    
   });
@@ -248,52 +280,6 @@ void addEndpoints() {
   
 }  
 
-
-/*********************************
- * Main Loop
- *********************************/
-void loop() {
-  now();  // Needed to refresh the Time lib, so that NTP server is called
-  // X seconds after reset, switch to custom AP if set
-  if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
-    defaultAP = false;
-    initSoftAP();
-  }
-  
-  // check if any new added slave needs to be renamed
-  if(slaveToRename != NULL) {
-    slaveCollection->renameOne(slaveToRename);
-    slaveToRename = NULL;
-  }
-  
-  // Check if any request to serve
-  server->handleClient();
- 
-  // Let gsm do its tasks: checking connection, incomming messages, 
-  // handler notifications...
-  gsm.refresh();   
-  
-  // Display needs to be refreshed periodically to handle blinking
-  oledDisplay->refresh();
-
-  // Time on display should be refreshed every second
-  // Intentionnally not using the value returned by now(), since it changes
-  // when time is set.  
-  timeNow = millis();
-  
-  if(timeNow - _timeLastTimeDisplay >= 1000) {
-    _timeLastTimeDisplay = timeNow;
-    timeDisplay();
-  }
-  if(timeNow - _timeLastTimeWifi >= 5000) {
-    _timeLastTimeWifi = timeNow;
-    // refresh wifi display every Xs to display both ssid/ips alternatively
-    wifiDisplay();
-    
-  }      
-  delay(20);
-  
-}
 
 // Temp, for tests
 //void ping() {
@@ -470,4 +456,58 @@ void wifiDisplay() {
     wifiType = AP_STA;
   } 
   oledDisplay->wifiIcon(blinkWifi, wifiType);
+}
+
+
+
+/*********************************
+ * Main Loop
+ *********************************/
+void loop() {
+  now();  // Needed to refresh the Time lib, so that NTP server is called
+  // X seconds after reset, switch to custom AP if set
+  if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
+    defaultAP = false;
+    initSoftAP();
+  }
+  
+  // check if any new added slave needs to be renamed
+  if(slaveToRename != NULL) {
+    slaveCollection->renameOne(slaveToRename);
+    slaveToRename = NULL;
+  }
+  
+  // Check if any request to serve
+  server->handleClient();
+ 
+  // Let gsm do its tasks: checking connection, incomming messages, 
+  // handler notifications...
+  gsm.refresh();   
+  
+  // Display needs to be refreshed periodically to handle blinking
+  oledDisplay->refresh();
+
+  // Time on display should be refreshed every second
+  // Intentionnally not using the value returned by now(), since it changes
+  // when time is set.  
+  timeNow = millis();
+  
+  if(timeNow - timeLastTimeDisplay >= 1000) {
+    timeLastTimeDisplay = timeNow;
+    timeDisplay();
+  }
+  if(timeNow - timeLastWifiDisplay >= 3500) {
+    timeLastWifiDisplay = timeNow;
+    // refresh wifi display every Xs to display both ssid/ips alternatively
+    wifiDisplay();    
+  }
+  
+  // TODO: ping every minute only      
+  if(timeNow - timeLastPing >= 5000) {
+    timeLastPing = timeNow; 
+    slaveCollection->ping();
+  } 
+  
+  delay(20);
+  
 }

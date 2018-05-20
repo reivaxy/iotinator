@@ -11,7 +11,7 @@
 #include "Slave.h"
 #include <map>
 
-#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
+//#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE_COLLECTION
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -26,7 +26,7 @@ typedef std::pair <std::string, Slave*>  slavePair;
 class SlaveCollection {
 public:
   SlaveCollection(XIOTModule* module);
-  Slave* add(String jsonStr);
+  Slave* add(char* jsonStr);
   void remove(const char* ip);
   void ping();  // ping every slave
   void reset(); // reset every slave

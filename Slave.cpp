@@ -54,6 +54,7 @@ void Slave::setCanSleep(bool canSleep) {
 }
 
 void Slave::setCustom(const char *custom) {
+  Debug("Slave::setCustom\n");
   if(_custom != NULL) {
     free(_custom); // This field is manually allocated, so it must be freed.
     _custom = NULL;
@@ -62,12 +63,27 @@ void Slave::setCustom(const char *custom) {
     _custom = NULL;
     return;
   }
-  int size = strlen(custom) + 1;
-  _custom = (char *)malloc(size);   // Will need to be freed, when we unregister slave, or overwrite one...
-  XUtils::safeStringCopy(_custom, custom, size);
+  int size = strlen(custom);
+  if(size > MAX_CUSTOM_DATA_SIZE) {
+    Serial.println(CUSTOM_DATA_TOO_BIG_VALUE);
+    size = strlen(CUSTOM_DATA_TOO_BIG_VALUE) ;
+    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister slave, or overwrite one...
+    XUtils::safeStringCopy(_custom, CUSTOM_DATA_TOO_BIG_VALUE, size);
+  } else {
+    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister slave, or overwrite one...
+    XUtils::safeStringCopy(_custom, custom, size);
+  }
 }
 
 const char* Slave::getCustom() {
+  Debug("Slave::getCustom\n");
+  if(_custom != NULL) {
+    if(strcmp(_custom, CUSTOM_DATA_TOO_BIG_VALUE) == 0) {
+      Serial.println(CUSTOM_DATA_TOO_BIG_VALUE);
+      _module->getDisplay()->setLine(1, "Custom Data too big", TRANSIENT, NOT_BLINKING);
+      _module->getDisplay()->setLine(2, getName(), TRANSIENT, NOT_BLINKING);
+    }
+  }
   return _custom;
 }
 
@@ -96,6 +112,7 @@ bool Slave::ping() {
   Debug("Slave::ping\n");
   int httpCode;
   _pong = false;
-  _module->APIGet(getIP(), "/api/ping", &httpCode);
-  return (httpCode == 200);
+  _module->APIGet(getIP(), "/api/ping", &httpCode);  
+  _pong = (httpCode == 200);
+  return _pong;
 }
