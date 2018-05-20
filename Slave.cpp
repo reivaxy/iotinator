@@ -42,6 +42,13 @@ void Slave::setIP(const char* ip) {
   XUtils::safeStringCopy(_ip, ip, DOUBLE_IP_MAX_LENGTH);
 }
 
+void Slave::setUiClassName(const char* uiClassName) {
+  XUtils::safeStringCopy(_uiClassName, uiClassName, UI_CLASS_NAME_MAX_LENGTH);
+}
+const char* Slave::getUiClassName() {
+  return _uiClassName;
+}
+
 bool Slave::getPong() {
   return _pong;
 }

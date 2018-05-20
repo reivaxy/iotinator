@@ -33,21 +33,25 @@ Slave* SlaveCollection::add(char* jsonStr) {
   const char *name = (const char*)root[XIOTModuleJsonTag::name]; 
   const char *mac = (const char*)root[XIOTModuleJsonTag::MAC];
   const char *ip = (const char*)root[XIOTModuleJsonTag::ip];
+  if(!name || !mac || !ip) {
+    _module->sendJson("{}", 500);
+    return NULL;
+  }
   Debug("SlaveCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
   char message[100];
-  sprintf(message, "Registering %s", name);
-  _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);
+  _module->getDisplay()->setLine(1, "Registering", TRANSIENT, NOT_BLINKING);
+  _module->getDisplay()->setLine(2, name, TRANSIENT, NOT_BLINKING);
   Slave* slave = new Slave(name, mac, _module);
-  // Insert it. If already inserted (same mac), get the one already inserted
-  // If not already inserted, get the one we just inserted. So that name compare and flag setting work
-  std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(ip, slave));
-  // If not inserted, point to the already preset
+  // Insert it.
+  std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(mac, slave));
+  // If not inserted because exists, point to the one already registered so that we can update it
   if(!slaveIt.second) {
     slave = slaveIt.first->second;
   }
   // We need to update some fields...  
   slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
   slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  slave->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
   slave->setIP(ip);
   
   slave->setName(name); // in case it's a new name for an already registered module.
@@ -61,10 +65,10 @@ Slave* SlaveCollection::add(char* jsonStr) {
 
 void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   int size = getCount();
-  Debug("SlaveCollection::list %d slaves\n", size);
+  Serial.printf("SlaveCollection::list %d slaves\n", size);
   
   // Size estimation: https://arduinojson.org/assistant/
-  // plan for 10 fields per slave
+  // TODO: update this when necessary : max 10 fields per slave
   const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
@@ -76,6 +80,7 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
     slave[XIOTModuleJsonTag::ip] = it->second->getIP();
     slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
     slave[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
+    slave[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       slave[XIOTModuleJsonTag::custom] = custom;    
@@ -109,6 +114,8 @@ void SlaveCollection::ping() {
       Serial.printf("Not ping module '%s' on ip '%s' (canSleep)\n", name, ip);
     }
   }
+  uint32_t freeMem = system_get_free_heap_size();
+  Serial.printf("Free heap mem: %d\n", freeMem);    
 }
 
 

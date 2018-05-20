@@ -25,9 +25,11 @@ public:
   bool ping(); // ping this slave
   void reset(); // reset this slave
   void setName(const char*);
-  void setIP(const char*);
   const char* getName();
+  void setIP(const char*);
   const char* getIP();
+  void setUiClassName(const char*);
+  const char* getUiClassName();
   const char* getMAC();
   bool getPong();
   void setToRename(bool flag);
@@ -44,11 +46,12 @@ public:
   
 protected:   
 
-  char _mac[MAC_ADDR_MAX_LENGTH]; // for modules connected to a slave's AP, store 2 ips
-  char _ip[DOUBLE_IP_MAX_LENGTH]; // for modules connected to a slave's AP, store 2 ips and separator
-  char _name[NAME_MAX_LENGTH];
-  bool _pong = false;  // Is true if last ping was successful
   XIOTModule* _module;
+  char _mac[MAC_ADDR_MAX_LENGTH + 1]; // for modules connected to a slave's AP, store 2 ips
+  char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a slave's AP, store 2 ips and separator
+  char _name[NAME_MAX_LENGTH + 1];
+  char _uiClassName[UI_CLASS_NAME_MAX_LENGTH + 1];
+  bool _pong = false;  // Is true if last ping was successful
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
   char * _custom = NULL; // custom data sent by module at registration, dynamicall allocated 
