@@ -132,3 +132,10 @@ bool Slave::ping() {
   _pong = (httpCode == 200);
   return _pong;
 }
+
+bool Slave::reset() {
+  Debug("Slave::reset\n");
+  int httpCode;
+  _module->APIGet(getIP(), "/api/moduleReset", &httpCode);  
+  return (httpCode == 200);
+}

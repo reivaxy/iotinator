@@ -270,8 +270,9 @@ void addEndpoints() {
   
   // TODO: remove this or make it better. Needed during dev
   // reset may be only possible by SMS from admin number ?
-  server->on("/api/reset", [](){
-    Serial.println("Rq on /reset master");
+  server->on("/api/swarmReset", [](){
+    Serial.println("Rq on /swarmReset");
+    slaveCollection->reset();
     config->initFromDefault();
     config->saveToEeprom();
     module->sendJson("{}", 200);

@@ -23,7 +23,7 @@ public:
   Slave(const char *name, const char* mac, XIOTModule* module);
   ~Slave();
   bool ping(); // ping this slave
-  void reset(); // reset this slave
+  bool reset(); // reset this slave
   void setName(const char*);
   const char* getName();
   void setIP(const char*);

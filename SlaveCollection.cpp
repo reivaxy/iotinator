@@ -90,12 +90,28 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   root.printTo(strBuffer, strBufferSize-1);
 }
 
+void SlaveCollection::reset() {
+  int size = getCount();
+  const char *ip, *name; 
+  Serial.printf("SlaveCollection::reset %d slaves\n", size);
+  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
+    ip = it->second->getIP();
+    name = it->second->getName();
+    Serial.printf("Reset module '%s' on ip '%s'\n", name, ip);
+    bool result = it->second->reset();
+    if(result) {
+      
+    }
+    
+    Serial.printf("Result: %s\n", result?"ok":"nok");
+  }
+}
+
 void SlaveCollection::ping() {
   int size = getCount();
   Debug("SlaveCollection::ping %d slaves -----------------\n", size);
   bool canSleep;  // If true, must not be pinged
-  const char *ip, *name;
-  
+  const char *ip, *name; 
   
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
     ip = it->second->getIP();
