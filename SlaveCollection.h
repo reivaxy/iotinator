@@ -11,7 +11,7 @@
 #include "Slave.h"
 #include <map>
 
-//#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
+#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
 
 #ifdef DEBUG_SLAVE_COLLECTION
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -27,13 +27,13 @@ class SlaveCollection {
 public:
   SlaveCollection(XIOTModule* module);
   Slave* add(char* jsonStr);
-  void remove(const char* ip);
+  void remove(const char* mac);
   void ping();  // ping every slave
   void reset(); // reset every slave
   void list(char* buffer, int size);
   int getCount();
   void renameOne(Slave *slave);
-  bool alreadyExists(const char* name, const char* ip);
+  bool alreadyExists(const char* name, const char* mac);
 
 protected:
   slaveMap _slaves;

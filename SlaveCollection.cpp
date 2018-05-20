@@ -31,13 +31,14 @@ Slave* SlaveCollection::add(char* jsonStr) {
     return NULL;
   }
   const char *name = (const char*)root[XIOTModuleJsonTag::name]; 
+  const char *mac = (const char*)root[XIOTModuleJsonTag::MAC];
   const char *ip = (const char*)root[XIOTModuleJsonTag::ip];
-  Debug("SlaveCollection::add name '%s', ip '%s'\n", name, ip);
+  Debug("SlaveCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
   char message[100];
   sprintf(message, "Registering %s", name);
   _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);
-  Slave* slave = new Slave(name, ip, _module);
-  // Insert it. If already inserted (same ip), get the one already inserted
+  Slave* slave = new Slave(name, mac, _module);
+  // Insert it. If already inserted (same mac), get the one already inserted
   // If not already inserted, get the one we just inserted. So that name compare and flag setting work
   std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(ip, slave));
   // If not inserted, point to the already preset
@@ -47,10 +48,11 @@ Slave* SlaveCollection::add(char* jsonStr) {
   // We need to update some fields...  
   slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
   slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  slave->setIP(ip);
   
   slave->setName(name); // in case it's a new name for an already registered module.
-  // check if one OTHER (not same IP) already registered module already has this name
-  if(alreadyExists(name, ip)) {
+  // check if one OTHER (not same mac) already registered module already has this name
+  if(alreadyExists(name, mac)) {
     slave->setToRename(true);
   }  
 
@@ -69,15 +71,16 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   JsonObject& root = jsonBuffer.createObject();
   
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
-    JsonObject& slave = root.createNestedObject(it->second->getIP());
+    JsonObject& slave = root.createNestedObject(it->second->getMAC());
     slave[XIOTModuleJsonTag::name] = it->second->getName();
+    slave[XIOTModuleJsonTag::ip] = it->second->getIP();
     slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
     slave[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       slave[XIOTModuleJsonTag::custom] = custom;    
     }
-    Debug("Name '%s' on ip '%s'\n", it->second->getName(), it->second->getIP());
+    Debug("Name '%s' on mac '%s'\n", it->second->getName(), it->second->getMAC());
   }
   root.printTo(strBuffer, strBufferSize-1);
 }
@@ -129,7 +132,7 @@ void SlaveCollection::renameOne(Slave *slave) {
   while (!ok && strlen(newName) < NAME_MAX_LENGTH) {
     sprintf(newName, "%s_%d", alpha, ++digit);
     Debug("Testing name %s\n", newName);   
-    if(!alreadyExists(newName, slave->getIP())) {
+    if(!alreadyExists(newName, slave->getMAC())) {
       ok = true;
     }   
   }
@@ -142,12 +145,12 @@ void SlaveCollection::renameOne(Slave *slave) {
 }
 
 /**
- * check if a name exists in the collection on a different ip
+ * check if a name exists in the collection on a different mac
  */
-bool SlaveCollection::alreadyExists(const char* name, const char* ip) {
+bool SlaveCollection::alreadyExists(const char* name, const char* mac) {
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
-    if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getIP(), ip) != 0))  {
-      Debug("Found duplicate %s on ip %s\n", name, it->second->getIP());
+    if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getMAC(), mac) != 0))  {
+      Debug("Found duplicate %s on ip %s\n", name, it->second->getIP()); // ip is easier for debugging since it's displayed on modules
       return true;
     }
   }

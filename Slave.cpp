@@ -10,9 +10,9 @@
  * Class to handle one slave module in master
  *
  *********************************************************************/
-Slave::Slave(const char* name, const char* ip, XIOTModule* module) {
+Slave::Slave(const char* name, const char* mac, XIOTModule* module) {
   XUtils::safeStringCopy(_name, name, NAME_MAX_LENGTH);
-  XUtils::safeStringCopy(_ip, ip, NAME_MAX_LENGTH);
+  XUtils::safeStringCopy(_mac, mac, NAME_MAX_LENGTH);
   _module = module;
 }
 
@@ -31,6 +31,15 @@ void Slave::setName(const char* name) {
 const char* Slave::getIP() {
   Debug("Slave::getIP\n");
   return _ip;
+}
+
+const char* Slave::getMAC() {
+  Debug("Slave::getMAC\n");
+  return _mac;
+}
+
+void Slave::setIP(const char* ip) {
+  XUtils::safeStringCopy(_ip, ip, DOUBLE_IP_MAX_LENGTH);
 }
 
 bool Slave::getPong() {
@@ -88,7 +97,7 @@ const char* Slave::getCustom() {
 }
 
 void Slave::renameTo(const char* newName) {
-  Debug("Slave::renameTo %s\n", getIP());
+  Debug("Slave::renameTo %s\n", getIP());  // ip is easier for debug since displayed on slaves
   int httpCode;
   char renameMsg[101];
   StaticJsonBuffer<100> jsonBuffer;
