@@ -18,9 +18,7 @@
 #include "initPageHtml.h"
 #include "masterConfig.h"
 #include "SlaveCollection.h"
-extern "C" {
-  #include "user_interface.h"
-}
+
 #define TIME_STR_LENGTH 100
 
 #define API_VERSION "1.0"    // modules can check API version to make sure they are compatible...
@@ -81,6 +79,7 @@ int jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) {
 /**
  * Compute the buffer size to hold the json string listing all registered slave modules
  **/
+ // TODO: let slavecollection handle that since it could know the really needed size for custom data
 void refreshListBufferSize() {
   int moduleCount = slaveCollection->getCount();
   listBufferSize = LIST_BUFFER_SIZE;
@@ -150,8 +149,10 @@ void initSoftAP() {
 }
 
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
+  char message[50];
+  sprintf(message, "Mac %02x:%02x:%02x:%02x:%02x:%02x\n", evt.mac[0], evt.mac[1], evt.mac[2], evt.mac[3], evt.mac[4], evt.mac[5]);
   oledDisplay->setLine(1, MSG_WIFI_STATION_CONNECTED, TRANSIENT, NOT_BLINKING);
-  Serial.printf("Mac %02x:%02x:%02x:%02x:%02x:%02x\n", evt.mac[0], evt.mac[1], evt.mac[2], evt.mac[3], evt.mac[4], evt.mac[5]);
+  oledDisplay->setLine(2, message, TRANSIENT, NOT_BLINKING);  
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
@@ -206,6 +207,7 @@ void addEndpoints() {
 
   server->on("/api/list", [](){
     // listBufferSize is updated when a slave registers
+    // TODO: let slavecollection handle that since it could know the size for custom data
     char *moduleListStr = (char *)malloc(listBufferSize); 
     slaveCollection->list(moduleListStr, listBufferSize);
     module->sendJson(moduleListStr, 200);
@@ -248,7 +250,8 @@ void addEndpoints() {
     Serial.println("Registering module");
     // This will allocate jsonString
     XUtils::stringToCharP(server->arg("plain"), &jsonString);
-    // slaveCollection->add method need to copy the data since jsonString will be freed.  
+    // slaveCollection->add method need to copy the data since jsonString will be freed. 
+    //Serial.println(jsonString); 
     Slave* slave = slaveCollection->add(jsonString);
     free(jsonString);
     if(slave == NULL) {
