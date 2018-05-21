@@ -140,14 +140,16 @@ bool Slave::ping() {
   char resultPayload[resultSize];
   _module->APIGet(getIP(), "/api/ping", &httpCode, resultPayload, resultSize);  
   _pong = (httpCode == 200);
-  const int bufferSize = JSON_OBJECT_SIZE(2);  // At most 2 fields in one object
-  StaticJsonBuffer<bufferSize> jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(resultPayload);
-  int heap = root[XIOTModuleJsonTag::heap];
-  Serial.printf("Heap module %s: %d\n", getName(), heap);
-  setHeap(heap);
-  Debug("Custom: %s\n", (const char *)root[XIOTModuleJsonTag::custom]);
-  setCustom(root[XIOTModuleJsonTag::custom]);  
+  if(_pong) {
+    const int bufferSize = JSON_OBJECT_SIZE(2);  // At most 2 fields in one object
+    StaticJsonBuffer<bufferSize> jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(resultPayload);
+    int heap = root[XIOTModuleJsonTag::heap];
+    Serial.printf("Heap module %s: %d\n", getName(), heap);
+    setHeap(heap);
+    Debug("Custom: %s\n", (const char *)root[XIOTModuleJsonTag::custom]);
+    setCustom(root[XIOTModuleJsonTag::custom]);  
+  }
   return _pong;
 }
 
