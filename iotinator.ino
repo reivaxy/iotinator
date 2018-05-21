@@ -15,9 +15,11 @@
 #include <XIOTDisplay.h>
 #include <XIOTModule.h> 
 
-#include "initPageHtml.h"
 #include "masterConfig.h"
 #include "SlaveCollection.h"
+
+#include "initPageHtml.h"
+#include "appPageHtml.h"
 
 #define TIME_STR_LENGTH 100
 
@@ -98,7 +100,6 @@ void setup() {
     WiFi.begin(config->getHomeSsid(), config->getHomePwd());
   }  
   
-
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
   
@@ -174,8 +175,17 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
 void addEndpoints() {
   server = module->getServer();  
   server->on("/", [](){
+    if (config->isAPInitialized()) {
+      printAppPage();
+    } else {
+      printHomePage();
+    }
+  });
+
+  server->on("/init", [](){
     printHomePage();
   });
+
 
   server->on("/api/list", [](){
     char *moduleListStr = slaveCollection->list();
@@ -277,8 +287,16 @@ void printNumbers() {
   }
 }
 
+void printAppPage() {
+  char *page = (char *)malloc(strlen(appPage) + strlen(DEFAULT_WEBAPP_HOST) + 10);
+  sprintf(page, appPage, DEFAULT_WEBAPP_HOST);
+  module->sendHtml(page, 200);
+  free(page);
+}
+
 void printHomePage() {
   // If init already done, display page saying so, otherwise display init page
+  
   // TODO Disabled for now, need to be enabled !!
   if (false && config->isAPInitialized()) {
     Serial.println("Init done Page");
@@ -289,14 +307,14 @@ void printHomePage() {
     sprintf(page, initPage, gsmEnabled ? "": "noGsm");
     module->sendHtml(page, 200);
     free(page);
-    server->on("/init", [](){
-      Serial.println("Rq on /init");
-      // TODO: /init might need to be disabled once done ?
-
-//      if(config->isAPInitialized()) {
-//        sendPage(MSG_ERR_ALREADY_INITIALIZED, 403);
-//        return;
-//      }
+    server->on("/initSave", [](){
+      Serial.println("Rq on /initSave");
+      
+      // TODO: /initSave might need to be disabled once done ?
+      if(false && config->isAPInitialized()) {
+        module->sendHtml(MSG_ERR_ALREADY_INITIALIZED, 403);
+        return;
+      }
       
       if (!server->hasArg("apSsid")) {
         module->sendText(MSG_ERR_BAD_REQUEST, 403);
@@ -321,6 +339,12 @@ void printHomePage() {
         // TODO: add checks
         config->setApSsid(apSsid);
         wifiDisplay();
+      }
+      // Read and save the web app server      
+      String appHost = server->arg("appHost");
+      if (apSsid.length() > 0) {
+        // TODO: add checks
+        config->setAppHost(appHost);
       }
       // Read and save new AP PWD 
       String apPwd = server->arg("apPwd");
