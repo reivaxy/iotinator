@@ -45,3 +45,8 @@ Picture of the swarm: one master, two slaves:
 
 <img src="resources/swarm.jpg" width="400px"/>
 
+Screen shot of the first draft of the webApp, showing 2 connected modules, and the status of the Switch module (no UI yet for Xenia module)
+
+The data is refreshed every 10 seconds and reflects the status of the modules. It's only display for now, actions will come soon:
+
+<img src="resources/webApp.png" width="400px"/>
