@@ -496,8 +496,9 @@ void loop() {
     wifiDisplay();    
   }
   
-  // TODO: ping every ? minute only      
-  if(timeNow - timeLastPing >= 60000) {
+  // TODO: ping every ? minute only 
+  // TODO: should modules give their ping periodicity ? probably, with min to 15" ?     
+  if(timeNow - timeLastPing >= 30000) {
     timeLastPing = timeNow; 
     slaveCollection->ping();
   } 
