@@ -44,6 +44,7 @@ $(document).ready(function() {
     },
     
     parse: function(data) {
+      // any transformation ? no ? ok
       return data;
     }
     
