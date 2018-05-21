@@ -19,6 +19,9 @@
 #define Debug(...)
 #endif
 
+// Arbitrary "security" additional buffer size. 
+#define LIST_BUFFER_SIZE 100
+
 // must not use char* as key
 typedef std::map <std::string, Slave*>  slaveMap;
 typedef std::pair <std::string, Slave*>  slavePair;
@@ -30,12 +33,15 @@ public:
   void remove(const char* mac);
   void ping();  // ping every slave
   void reset(); // reset every slave
-  void list(char* buffer, int size);
+  char *list();
   int getCount();
   void renameOne(Slave *slave);
   bool alreadyExists(const char* name, const char* mac);
 
 protected:
   slaveMap _slaves;
-  XIOTModule* _module;  
+  XIOTModule* _module;
+  int _listBufferSize;
+  void _refreshListBufferSize();
+  int _jsonAttributeSize(int moduleCount, const char *attrName, int valueSize);  
 };

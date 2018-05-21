@@ -64,34 +64,6 @@ bool defaultAP = true;
 bool displayAP = false;
 String ipOnHomeSsid;
 
-// Arbitrary "security" additional buffer size. 
-#define LIST_BUFFER_SIZE 100
-int listBufferSize = LIST_BUFFER_SIZE ;
-
-/**
- * Compute the buffer size to hold one attribute, its value and json syntax elements, for all registered modules
- **/
-int jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) { 
-  // size of the value of the attribute + size of its name + 2 double quotes + semi colon + coma 
-  return moduleCount * (valueSize + strlen(attrName) + 2 + 1 + 1);
-}
-
-/**
- * Compute the buffer size to hold the json string listing all registered slave modules
- **/
- // TODO: let slavecollection handle that since it could know the really needed size for custom data
-void refreshListBufferSize() {
-  int moduleCount = slaveCollection->getCount();
-  listBufferSize = LIST_BUFFER_SIZE;
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH);
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5);  // true or false
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pong, 5); // true or false
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH);
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH);
-  listBufferSize += jsonAttributeSize(moduleCount, XIOTModuleJsonTag::custom, MAX_CUSTOM_DATA_SIZE);
-}
-
-
 void setup() {
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
@@ -206,12 +178,8 @@ void addEndpoints() {
   });
 
   server->on("/api/list", [](){
-    // listBufferSize is updated when a slave registers
-    // TODO: let slavecollection handle that since it could know the size for custom data
-    char *moduleListStr = (char *)malloc(listBufferSize); 
-    slaveCollection->list(moduleListStr, listBufferSize);
+    char *moduleListStr = slaveCollection->list();
     module->sendJson(moduleListStr, 200);
-    Serial.printf("Reserved size: %d, actual size: %d\n", listBufferSize, strlen(moduleListStr));
     free(moduleListStr); 
 
     uint32_t freeMem = system_get_free_heap_size();
@@ -251,7 +219,7 @@ void addEndpoints() {
     // This will allocate jsonString
     XUtils::stringToCharP(server->arg("plain"), &jsonString);
     // slaveCollection->add method need to copy the data since jsonString will be freed. 
-    //Serial.println(jsonString); 
+    Serial.println(jsonString); 
     Slave* slave = slaveCollection->add(jsonString);
     free(jsonString);
     if(slave == NULL) {
@@ -262,7 +230,6 @@ void addEndpoints() {
       if(slave->getToRename()) {
         slaveToRename = slave;
       }
-      refreshListBufferSize();
     }
     Serial.printf("New slave count: %d\n", slaveCollection->getCount());    
   });

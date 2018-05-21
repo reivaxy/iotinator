@@ -34,6 +34,8 @@ public:
   bool getPong();
   void setToRename(bool flag);
   bool getToRename();
+  void setHeap(uint32_t heap);
+  uint32_t getHeap();
   /**
    * Modules powered by batteries should take advantage of the sleep feature.
    * They should not be 'pinged' by master
@@ -54,6 +56,7 @@ protected:
   bool _pong = false;  // Is true if last ping was successful
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
-  char * _custom = NULL; // custom data sent by module at registration, dynamicall allocated 
+  uint32_t _heap = 0; 
+  char * _custom = NULL; // custom data sent by module at registration, dynamicall allocated
 
 }; 

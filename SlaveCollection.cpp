@@ -52,6 +52,7 @@ Slave* SlaveCollection::add(char* jsonStr) {
   slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
   slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
   slave->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
+  slave->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
   slave->setIP(ip);
   
   slave->setName(name); // in case it's a new name for an already registered module.
@@ -59,11 +60,34 @@ Slave* SlaveCollection::add(char* jsonStr) {
   if(alreadyExists(name, mac)) {
     slave->setToRename(true);
   }  
-
+  _refreshListBufferSize();
   return slave;
 }
 
-void SlaveCollection::list(char *strBuffer, int strBufferSize) {
+/**
+ * Compute the buffer size to hold one attribute, its value and json syntax elements, for all registered modules
+ **/
+int SlaveCollection::_jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) { 
+  // size of the value of the attribute + size of its name + 2 double quotes + semi colon + coma 
+  return moduleCount * (valueSize + strlen(attrName) + 2 + 1 + 1);
+}
+
+/**
+ * Compute the buffer size to hold the json string listing all registered slave modules
+ **/
+void SlaveCollection::_refreshListBufferSize() {
+  int moduleCount = getCount();
+  _listBufferSize = LIST_BUFFER_SIZE;
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5);  // true or false
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pong, 5); // true or false
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::uiClassName, UI_CLASS_NAME_MAX_LENGTH);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::heap, sizeof(uint32_t));
+}
+
+char* SlaveCollection::list() {
   int size = getCount();
   Serial.printf("SlaveCollection::list %d slaves\n", size);
   
@@ -73,6 +97,7 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
   JsonObject& root = jsonBuffer.createObject();
+  int customSize = 0;
   
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
     JsonObject& slave = root.createNestedObject(it->second->getMAC());
@@ -81,13 +106,21 @@ void SlaveCollection::list(char *strBuffer, int strBufferSize) {
     slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
     slave[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
     slave[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
+    slave[XIOTModuleJsonTag::heap] = it->second->getHeap();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
-      slave[XIOTModuleJsonTag::custom] = custom;    
+      slave[XIOTModuleJsonTag::custom] = custom;
+      customSize = strlen(custom);    
     }
     Debug("Name '%s' on mac '%s'\n", it->second->getName(), it->second->getMAC());
   }
+  
+  // listBufferSize is updated when a slave registers
+  int strBufferSize = _listBufferSize + customSize;
+  char* strBuffer = (char *)malloc(strBufferSize); 
   root.printTo(strBuffer, strBufferSize-1);
+  Serial.printf("Reserved size: %d, actual size: %d\n", strBufferSize, strlen(strBuffer));
+  return strBuffer;
 }
 
 void SlaveCollection::reset() {

@@ -17,7 +17,7 @@ Slave::Slave(const char* name, const char* mac, XIOTModule* module) {
 }
 
 Slave::~Slave() {
-  if(_custom != NULL) free(_custom);
+  free(_custom);
 }
 
 const char* Slave::getName() {
@@ -61,6 +61,14 @@ bool Slave::getToRename() {
   return _toRename;
 }
 
+void Slave::setHeap(uint32_t heap) {
+  _heap = heap;
+}
+
+uint32_t Slave::getHeap() {
+  return _heap;
+}
+
 bool Slave::getCanSleep() {
   return _canSleep;
 }
@@ -71,10 +79,9 @@ void Slave::setCanSleep(bool canSleep) {
 
 void Slave::setCustom(const char *custom) {
   Debug("Slave::setCustom\n");
-  if(_custom != NULL) {
-    free(_custom); // This field is manually allocated, so it must be freed.
-    _custom = NULL;
-  }
+  free(_custom); // This field is manually allocated, so it must be freed.
+  _custom = NULL;
+
   if(custom == NULL) {
     _custom = NULL;
     return;
@@ -107,7 +114,8 @@ void Slave::renameTo(const char* newName) {
   Debug("Slave::renameTo %s\n", getIP());  // ip is easier for debug since displayed on slaves
   int httpCode;
   char renameMsg[101];
-  StaticJsonBuffer<100> jsonBuffer;
+  const int bufferSize = JSON_OBJECT_SIZE(1);
+  StaticJsonBuffer<bufferSize> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   root[XIOTModuleJsonTag::name] = newName ;
   root.printTo(renameMsg, 100);   
@@ -128,8 +136,18 @@ bool Slave::ping() {
   Debug("Slave::ping\n");
   int httpCode;
   _pong = false;
-  _module->APIGet(getIP(), "/api/ping", &httpCode);  
+  int resultSize = 100 + MAX_CUSTOM_DATA_SIZE; 
+  char resultPayload[resultSize];
+  _module->APIGet(getIP(), "/api/ping", &httpCode, resultPayload, resultSize);  
   _pong = (httpCode == 200);
+  const int bufferSize = JSON_OBJECT_SIZE(2);  // At most 2 fields in one object
+  StaticJsonBuffer<bufferSize> jsonBuffer;
+  JsonObject& root = jsonBuffer.parseObject(resultPayload);
+  int heap = root[XIOTModuleJsonTag::heap];
+  Serial.printf("Heap module %s: %d\n", getName(), heap);
+  setHeap(heap);
+  Debug("Custom: %s\n", (const char *)root[XIOTModuleJsonTag::custom]);
+  setCustom(root[XIOTModuleJsonTag::custom]);  
   return _pong;
 }
 
