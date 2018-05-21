@@ -86,7 +86,6 @@ $(document).ready(function() {
         //   cssJsLoaded[item.uiClassName] = true;
         // }
       }
-      moduleLoaded = true;
       return result;
     }
   });
@@ -109,15 +108,21 @@ $(document).ready(function() {
       this.listenTo(this.model, 'change', this.render);
       let jsonModel = this.model.toJSON();
       let moduleUIClass = jsonModel.uiClassName;
-      this.__moduleModel = new window[moduleUIClass].Model(jsonModel.custom);
-      this.__moduleView = new window[moduleUIClass].View({model: this.__moduleModel, id: jsonModel.custom.id});
+      if(moduleUIClass in window) {
+        this.__moduleModel = new window[moduleUIClass].Model(jsonModel.custom);
+        this.__moduleView = new window[moduleUIClass].View({model: this.__moduleModel, id: "content_" + jsonModel.custom.id});
+      }
     },
     render: function () {
       let jsonModel = this.model.toJSON();
       this.$el.html(this.template(jsonModel));
       this.$el.addClass("col-xs-12 col-sm-4 col-md-4 col-lg-3");
-      this.__moduleView.setElement(this.$el.find(".moduleContent").first());
-      this.__moduleView.$el.html(this.__moduleView.template(this.__moduleModel.toJSON()));
+      let moduleUIClass = jsonModel.uiClassName;
+      if(moduleUIClass in window) {
+        this.__moduleView.setElement(this.$el.find(".moduleContent").first());
+        this.__moduleModel.set(jsonModel.custom);
+        this.__moduleView.$el.html(this.__moduleView.template(this.__moduleModel.toJSON()));
+      }
       
       return this;
     }
