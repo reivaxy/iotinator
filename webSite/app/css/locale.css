@@ -1,0 +1,8 @@
+
+.footer.pong.true::before {
+  content: "Connected";
+}
+
+.footer.pong.false::before {
+  content: "Disconnected";
+}

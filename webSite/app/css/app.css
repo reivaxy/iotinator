@@ -1,0 +1,126 @@
+/*Style for icon font*/
+@import 'style.css';
+
+body {
+  background: linear-gradient(to top, #1e5799 11%,#7db9e8 74%);
+  padding: 10px;
+  font-weight: bold;
+}
+
+h1 {
+  text-align: center;
+  font-size: 30px;
+}
+hr {
+  margin: 15px 0 3px 0;
+  border-color: cornflowerblue;
+}
+.moduleWrapper {
+  border: 1px solid black;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.moduleWrapper div.footer {
+  font-weight: normal;
+  padding: 0 2px;
+  font-size:0.9em;
+}
+.name {
+  border-bottom: 1px solid grey;
+  margin-bottom: 15px;
+}
+
+
+/*Show/hide conditional stuff*/
+
+/*Alert section*/
+.moduleWrapper.isalert .name{
+  background-color: pink;
+}
+
+div.name div.commands {
+  position: absolute;
+  top:0;
+  bottom:0;
+  right:0;
+}
+/*.moduleWrapper div.isalert {*/
+  /*background-color: #FFDDDD;*/
+/*}*/
+
+.moduleWrapper div {
+  position: relative;
+  padding: 2px;
+}
+
+span.icon {
+  margin-right:8px;
+  margin-top: 3px;
+  cursor: pointer;
+  opacity: 0.4;
+  float:right;
+
+}
+span.icon:hover {
+  opacity: 1;
+}
+
+body.fetchingError span.icon.icon-loop2 {
+  opacity: 1;
+  color: red;
+}
+@keyframes rotating {
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+body.fetching span.icon.icon-loop2 {
+  animation: rotating 2s linear infinite;
+  opacity: 1;
+}
+
+.icon.icon-pencil {
+  display: none;
+}
+.isAlert>.icon.icon-sad {
+  display: block;
+}
+.isAlert>.icon.icon-smile {
+  display: none;
+}
+
+span.icon.icon-sad {
+  display: none;
+  color: red;
+  font-weight: bold;
+  opacity: 1;
+  cursor: default;
+}
+span.icon.icon-smile {
+  display: block;
+  color: green;
+  font-weight: bold;
+  opacity: 1;
+  cursor: default;
+}
+.moduleWrapper.showSettings .icon.icon-pencil {
+  display: block;
+}
+
+.moduleWrapper.showSettings .setting {
+  display: block;
+}
+
+.moduleWrapper.showSettings .icon-cog {
+  color: red;
+}
+
+.setting {
+  display: none;
+}
+
+.date.setting {
+  display: block;
+}
+
