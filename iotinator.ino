@@ -288,8 +288,8 @@ void printNumbers() {
 }
 
 void printAppPage() {
-  char *page = (char *)malloc(strlen(appPage) + strlen(DEFAULT_WEBAPP_HOST) + 10);
-  sprintf(page, appPage, DEFAULT_WEBAPP_HOST);
+  char *page = (char *)malloc(strlen(appPage) + strlen(config->getAppHost()) + 1);
+  sprintf(page, appPage, config->getAppHost());
   module->sendHtml(page, 200);
   free(page);
 }
