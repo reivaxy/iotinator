@@ -118,10 +118,10 @@ void Slave::renameTo(const char* newName) {
   StaticJsonBuffer<bufferSize> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   root[XIOTModuleJsonTag::name] = newName ;
-  root.printTo(renameMsg, 100);   
+  root.printTo(renameMsg, 100);
+  Serial.printf("Renaming payload: %s\n", renameMsg);   
   _module->APIPost(getIP(), "/api/rename", renameMsg, &httpCode);
   if(httpCode != 200) {
-    Serial.println("Renaming failed");
     _module->getDisplay()->setLine(1, "Renaming failed", TRANSIENT, NOT_BLINKING);
     setName(newName);
   } else {

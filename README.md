@@ -45,8 +45,15 @@ Picture of the swarm: one master, two slaves:
 
 <img src="resources/swarm.jpg" width="400px"/>
 
+
 Screen shot of the first draft of the webApp, showing 2 connected modules, and the status of the Switch module (no UI yet for Xenia module)
 
 The data is refreshed every 10 seconds and reflects the status of the modules. It's only display for now, actions will come soon:
+
+The UI is using Backbone and Bootstrap. A less than 1K page is served by the master ESP8266, and the rest of the API (libs, css, js) are hosted on a regular public server.
+
+It's fast and light !
+
+This one is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
 
 <img src="resources/webApp.png" width="400px"/>

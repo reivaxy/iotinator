@@ -90,6 +90,9 @@ void SlaveCollection::_refreshListBufferSize() {
 char* SlaveCollection::list() {
   int size = getCount();
   Serial.printf("SlaveCollection::list %d slaves\n", size);
+  if(size == 0) {
+    return strcpy((char*)malloc(3), "{}");  
+  }
   
   // Size estimation: https://arduinojson.org/assistant/
   // TODO: update this when necessary : max 10 fields per slave
