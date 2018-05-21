@@ -60,7 +60,7 @@ void MasterConfigClass::setHomeSsid(const char* ssid) {
   XUtils::safeStringCopy(_getDataPtr()->homeSsid, ssid, SSID_MAX_LENGTH);
 }
 void MasterConfigClass::setHomeSsid(String ssidString) {
-  char ssid[SSID_MAX_LENGTH];
+  char ssid[SSID_MAX_LENGTH + 1];
   ssidString.toCharArray(ssid, (unsigned int)SSID_MAX_LENGTH);
   setHomeSsid(ssid);
 }
@@ -68,7 +68,7 @@ void MasterConfigClass::setHomePwd(const char* pwd) {
   XUtils::safeStringCopy(_getDataPtr()->homePwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setHomePwd(String pwdString) {
-  char pwd[PWD_MAX_LENGTH];
+  char pwd[PWD_MAX_LENGTH + 1];
   pwdString.toCharArray(pwd, (unsigned int)PWD_MAX_LENGTH);
   setHomePwd(pwd);
 }
@@ -76,8 +76,17 @@ void MasterConfigClass::setHomePwd(String pwdString) {
 void MasterConfigClass::setApSsid(const char* ssid) {
   XUtils::safeStringCopy(_getDataPtr()->apSsid, ssid, SSID_MAX_LENGTH);
 }
+void MasterConfigClass::setAppHost(const char* appHost) {
+  XUtils::safeStringCopy(_getDataPtr()->webAppHost, appHost, HOSTNAME_MAX_LENGTH);
+}
+void MasterConfigClass::setAppHost(String appHostString) {
+  char appHost[HOSTNAME_MAX_LENGTH + 1];
+  appHostString.toCharArray(appHost, (unsigned int)HOSTNAME_MAX_LENGTH);
+  setAppHost(appHost);
+}
+
 void MasterConfigClass::setApSsid(String ssidString) {
-  char ssid[SSID_MAX_LENGTH];
+  char ssid[SSID_MAX_LENGTH + 1];
   ssidString.toCharArray(ssid, (unsigned int)SSID_MAX_LENGTH);
   setApSsid(ssid);
 }
@@ -85,7 +94,7 @@ void MasterConfigClass::setApPwd(const char* pwd) {
   XUtils::safeStringCopy(_getDataPtr()->apPwd, pwd, PWD_MAX_LENGTH);
 }
 void MasterConfigClass::setApPwd(String pwdString) {
-  char pwd[PWD_MAX_LENGTH];
+  char pwd[PWD_MAX_LENGTH + 1];
   pwdString.toCharArray(pwd, (unsigned int)PWD_MAX_LENGTH);
   setApPwd(pwd);
 }
@@ -95,6 +104,11 @@ char* MasterConfigClass::getHomeSsid(void) {
 char* MasterConfigClass::getHomePwd(void) {
    return _getDataPtr()->homePwd;
 }
+
+char* MasterConfigClass::getAppHost(void) {
+   return _getDataPtr()->webAppHost;
+}
+
 
 // For the first 60 seconds the default AP is opened
 char* MasterConfigClass::getApSsid(bool force) {
@@ -127,7 +141,7 @@ char* MasterConfigClass::getAdminNumber() {
 }
 
 void MasterConfigClass::setAdminNumber(String numberString) {
-  char number[PHONE_NUMBER_LENGTH];
+  char number[PHONE_NUMBER_LENGTH + 1];
   numberString.toCharArray(number, (unsigned int)PHONE_NUMBER_LENGTH);
   setAdminNumber(number);
 }

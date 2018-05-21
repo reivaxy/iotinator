@@ -55,6 +55,8 @@ public:
   char* getName(void);
   void setName(const char*);   
   void setHomeSsid(const char* ssid);
+  void setAppHost(const char* appHost);
+  void setAppHost(String appHost);
   void setHomeSsid(String ssid);
   void setHomePwd(const char* pwd);
   void setHomePwd(String pwd);
@@ -63,6 +65,7 @@ public:
   void setApPwd(const char* pwd);
   void setApPwd(String pwd);
   char* getHomeSsid(void);
+  char* getAppHost(void);
   char* getHomePwd(void);
   char* getApSsid(bool force=false);
   char* getApPwd(bool force=false);
