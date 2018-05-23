@@ -1,9 +1,9 @@
 # iotinator
-The global multipurpose home iot solution.
+### The global multipurpose home iot solution.
 
 This is the master module of the iotinator framework.
 
-Its goal is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication.
+Its goal (Still a work in progress...) is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication.
 
 Example of such devices are: light or heater switch, weather station, water detector, smoke detector, movement detector, aquarium monitoring (much like https://github.com/reivaxy/aquaMonitor).
 
@@ -11,19 +11,46 @@ It runs on esp8266 hardware (will investigate esp32 hardware too), connected to 
 
 It defines APIs to communicate with the modules, and dispatches and forwards messages received by SMS to them, and sends their responses back.
 
-It also provides an API so that modules can record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
+This API also allows modules to record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
 
-It connects to a domestic Wifi network and exposes a "private" Wifi network to communicate with slave modules.
+It connects to a domestic Wifi network to get time through NTP servers (but it can also get time from GSM network), and record logs and stats on a web server, much like http://reeftankalert.com/chart.php) and exposes a "private" Wifi network to communicate with slave modules.
 
 Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
 
-Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled. Current time is fetched from NTP servers once Home Wifi is configured and connected.
+Current Status (2018/05/22):
+
+Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled.
 
 GSM will be an option, the framework being able to work just using internet.
 
 But GSM is nice in case of power outage (modules can have batteries, but my box doesn't), and also to handle security
 (sending codes to validate authentication for instance)
+
+Current time is fetched from NTP servers once Home Wifi is configured and connected.
+
+The framework currently allows to create a new module in :
+* a few lines of CPP in which you implement your custom settings and behaviors, including displaying custom info on the Oled screen.
+* a few lines of JS and CSS in which you implement the custom UI elements exposed on the webApp
+
+The framework takes care of wifi connection to the iotinator master, registration, data communicatio, polling, display management
+
+To create a new module, just get the iotSwitch repo, rename it, and the files within, and the classes they contain, and the code is totally self explanatory (No, just kidding).
+
+For now the UI files (js, css) of each module is in the iotinator repository, which will change soon.
+
+The UI framework is taking of displaying one block for each module connected with their connection information and providing the module's generic and custom data, and each module needs to provide the UI elements to display/handle its custom data within these blocks, and send actions to the REST api.
+
+The UI part is not offering enough in terms of framework, and may change drastically. I'd like to investigate a vuejs version, and several UIs could easily be made available at the same time anyway.
+
+Most UI files (all but one) need to be hosted on a public web server, because of low capacity on ESP8266 both in terms of storage and performances. I don't want to bloat it with an SD card, it has better things to do.
+
+The js and css files are loaded from the minimalist loader page served by the module to build the webApp, which allows to modify the webApp without the need for flashing the ESP8266 to improve the look, or translate messages. This also makes using images really easier, and contributes to faster page loading, since the wifi module does not have a great bandwidth (and does not process multiple requests simultaneously).
+
+Of course you'll need to add the .htaccess directive:
+
+Header set Access-Control-Allow-Origin "*"
+
 
 You'll need to clone these repositories into your arduino "libraries" directory to be able to compile:
 
@@ -32,6 +59,7 @@ You'll need to clone these repositories into your arduino "libraries" directory 
 - https://github.com/reivaxy/XEEPROMConfig.git
 - https://github.com/reivaxy/XUtils.git
 - https://github.com/reivaxy/XIOTModule.git
+- https://github.com/reivaxy/XIOTConfig.git
 
 And some libraries that can be found through the Arduino IDE
 
