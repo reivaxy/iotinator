@@ -1,0 +1,20 @@
+{
+    "5c:cf:7f:24:7a:ef": {
+        "name": "Switch",
+        "ip": "192.168.4.2",
+        "canSleep": true,
+        "pong": true,
+        "uiClassName": "switchUIClass",
+        "heap": 0,
+        "custom": "FaaaaabbE"
+    },
+    "60:01:94:0c:31:14": {
+        "name": "Leak",
+        "ip": "192.168.4.3",
+        "canSleep": false,
+        "pong": true,
+        "uiClassName": "leakUIClass",
+        "heap": 38448,
+        "custom": "{\"autoWake\":0}"
+    }
+}
