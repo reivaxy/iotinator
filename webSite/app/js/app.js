@@ -111,6 +111,8 @@ $(document).ready(function() {
       let moduleUIClass = jsonModel.uiClassName;
       if(moduleUIClass in window) {
         this.__moduleModel = new window[moduleUIClass].Model(jsonModel.custom);
+        this.__moduleModel.url = function() {return "/api/data"};
+        this.__moduleModel.__ip = jsonModel.ip;
         this.__moduleView = new window[moduleUIClass].View({model: this.__moduleModel, id: "content_" + jsonModel.custom.id});
       }
     },
