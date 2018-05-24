@@ -1,17 +1,17 @@
 # iotinator
 ### The global multipurpose home iot solution.
 
-This is the master module of the iotinator framework.
+Iotinator is the master module of the Xiot framework.
 
-Its goal (Still a work in progress...) is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication.
+Its goal (Still a work in progress...) is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication. Once the master module is configured, adding a module is 0 configuration. Designing a few module is just a few lines of code, depending on its complexity, of course.
 
 Example of such devices are: light or heater switch, weather station, water detector, smoke detector, movement detector, aquarium monitoring (much like https://github.com/reivaxy/aquaMonitor).
 
-It runs on esp8266 hardware (will investigate esp32 hardware too), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
+The master and the modules run on esp8266 hardware (will investigate esp32 hardware too), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
 
-It defines APIs to communicate with the modules, and dispatches and forwards messages received by SMS to them, and sends their responses back.
+The Iotinator master module exposes APIs to communicate with the modules, and dispatches and forwards messages received by SMS to them, and sends their responses back.
 
-This API also allows modules to record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
+These API also allow modules to record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
 
 It connects to a domestic Wifi network to get time through NTP servers (but it can also get time from GSM network), and record logs and stats on a web server, much like http://reeftankalert.com/chart.php) and exposes a "private" Wifi network to communicate with slave modules.
 
