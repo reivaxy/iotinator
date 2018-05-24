@@ -4,10 +4,7 @@
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
-#include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <stdio.h>
 #include <TimeLib.h>
@@ -316,7 +313,8 @@ void printHomePage() {
         return;
       }
       
-      if (!server->hasArg("apSsid")) {
+      // TODO enabled some controls
+      if (false && !server->hasArg("apSsid")) {
         module->sendText(MSG_ERR_BAD_REQUEST, 403);
         return;
       }
