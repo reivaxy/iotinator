@@ -4,7 +4,6 @@ var switchUIClass = {
   Model: Backbone.Model.extend({
     defaults: function () {
       let model = {
-        id: "",
         status: ""  // "on" or "off"
       };
       return model;
@@ -31,15 +30,12 @@ var switchUIClass = {
       "click label.btn": "toggle",
     },
     toggle: function(e) {
-      if(this.model.attributes.status == "off") {
-        this.model.attributes.status = "on";
+      if(this.model.get("status") == "off") {
+        this.model.set({status:"on"});
       } else {
-        this.model.attributes.status = "off";
+        this.model.set({status:"off"});
       }
       Backbone.sync("update", this.model, {url:document.location.href + "api/data", headers:{"Xiot-forward-to": this.model.__ip}});
-      // super crappy
-      this.model.set(this.model.toJSON());
-      this.render();
     },
     render: function () {
       this.$el.html(this.template(this.model.toJSON()));
