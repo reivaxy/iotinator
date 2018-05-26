@@ -12,6 +12,8 @@ Some can operate using a small battery, others will need a power adapter, others
 
 Examples of modules are:
 - Turning on/off a lamp, a heater, an air conditionner (Existing https://github.com/reivaxy/iotSwitch module, work in progress)
+  Here is a picture of this module's Oled display:
+  <img src="resources/switch_ready.jpg" width="400px"/>
 - A programmable scheduler to turn on/off random devices
 - Monitoring for water leaks
 - Monitoring for fire/fumes
@@ -99,9 +101,7 @@ Picture of the early prototype:
 
 <img src="resources/prototype.jpg" width="400px"/>
 
-Picture of the swarm: one master, two slaves:
 
-<img src="resources/swarm.jpg" width="400px"/>
 
 
 Screen shot of the first draft of the webApp, showing 2 connected modules, and the status of the Switch module (no UI yet for Xenia module)
