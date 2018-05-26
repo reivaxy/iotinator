@@ -12,8 +12,11 @@ Some can operate using a small battery, others will need a power adapter, others
 
 Examples of modules are:
 - Turning on/off a lamp, a heater, an air conditionner (Existing https://github.com/reivaxy/iotSwitch module, work in progress)
-  Here is a picture of this module's Oled display:
-  <img src="resources/switch_ready.jpg" width="400px"/>
+ 
+ Here is a picture of this module's Oled display:
+ 
+  <img src="resources/switch_ready.jpg" width="200px"/>
+  
 - A programmable scheduler to turn on/off random devices
 - Monitoring for water leaks
 - Monitoring for fire/fumes
