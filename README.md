@@ -2,7 +2,7 @@
 ### The global multipurpose home iot solution.
 
 
-TL;DR: This is not just a framework or a library, it's an iot application you can already use.
+TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed work-through introduction: https://github.com/reivaxy/iotinator/wiki
 
 You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
 
@@ -20,7 +20,7 @@ Examples of modules are:
 - A programmable scheduler to turn on/off random devices
 - Monitoring for water leaks
 - Monitoring for fire/fumes
-- Monitoring an aquarium parameters to alert when something's off
+- Monitoring an aquarium parameters to alert when something's off (https://github.com/reivaxy/aquaMonitor)
 - You name it !
 
 (*) ok, not many are available at this time, it's a work in progress.
@@ -39,8 +39,6 @@ Its goal is to control many different devices by SMS or through a webApp (or mob
 
 
 Designing a few module is just a few lines of code, depending on its complexity, of course.
-
-Example of such devices are: light or heater switch, weather station, water detector, smoke detector, movement detector, aquarium monitoring (much like https://github.com/reivaxy/aquaMonitor).
 
 The master and the modules run on esp8266 hardware (will investigate esp32 hardware too, one board having an Oled screen already integrated), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
 
@@ -100,16 +98,14 @@ And some libraries that can be found through the Arduino IDE
 
 TODO: list the libraries :)
 
-Picture of the early prototype:
+Picture of the early prototype with its SIM800 board:
 
 <img src="resources/prototype.jpg" width="400px"/>
 
 
+Screen shot of the first draft of the webApp, showing 2 connected modules.
 
-
-Screen shot of the first draft of the webApp, showing 2 connected modules, and the status of the Switch module (no UI yet for Xenia module)
-
-The data is refreshed every 10 seconds and reflects the status of the modules. It's only display for now, actions will come soon:
+The data is refreshed every 10 seconds and reflects the status of the modules. A click on the button allows to control the Switch.
 
 The UI is using Backbone and Bootstrap. A less than 1K page is served by the master ESP8266, and the rest of the API (libs, css, js) are hosted on a regular public server.
 
