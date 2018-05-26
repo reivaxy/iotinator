@@ -30,13 +30,14 @@ class SlaveCollection {
 public:
   SlaveCollection(XIOTModule* module);
   Slave* add(char* jsonStr);
+  Slave* refresh(char* jsonStr);
   void remove(const char* mac);
   void ping();  // ping every slave
   void reset(); // reset every slave
   char *list();
   int getCount();
   void renameOne(Slave *slave);
-  bool alreadyExists(const char* name, const char* mac);
+  bool nameAlreadyExists(const char* name, const char* mac);
 
 protected:
   slaveMap _slaves;

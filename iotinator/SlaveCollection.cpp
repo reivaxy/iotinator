@@ -15,17 +15,45 @@ int SlaveCollection::getCount() {
   return _slaves.size();
 }
 
+Slave* SlaveCollection::refresh(char* jsonStr) {
+  Debug("SlaveCollection::refresh\n");
+  StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; // registration is bigger than needed
+  JsonObject& root = jsonBuffer.parseObject(jsonStr); 
+  if (!root.success()) {
+    Serial.println("Refreshing parse failure for:");
+    Serial.println(jsonStr);
+    return NULL;
+  }
+  const char *mac = (const char*)root[XIOTModuleJsonTag::MAC];
+  if(!mac) {
+    Serial.println("Refreshing: missing MAC addr");
+    return NULL;
+  }
+  char message[100];
+  _module->getDisplay()->setLine(1, "Refreshing", TRANSIENT, NOT_BLINKING);
+  _module->getDisplay()->setLine(2, mac, TRANSIENT, NOT_BLINKING);
+  
+  slaveMap::iterator it;
+  it = _slaves.find(mac);
+  if(it == _slaves.end()) {
+    Serial.println("Refreshing: could not find module.");
+    return NULL;
+  }
+  Slave *slave = it->second;
+  _module->getDisplay()->setLine(2, slave->getName(), TRANSIENT, NOT_BLINKING);
+  slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  return slave; 
+}
+
 /**
  * Register a new slave
- * BEWARE: we are in a server GET processing callback: do not attempt any outgoing request.
- * (no ping, no slave renaming here)
  * data from jsonStr needs to be copied, since it will be freed
  */ 
 Slave* SlaveCollection::add(char* jsonStr) {
   StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; 
   JsonObject& root = jsonBuffer.parseObject(jsonStr); 
   if (!root.success()) {
-    Serial.println("Registration: parse failure for:");
+    Serial.println("Registration parse failure for:");
     Serial.println(jsonStr);
     _module->sendJson("{}", 500);
     return NULL;
@@ -34,7 +62,6 @@ Slave* SlaveCollection::add(char* jsonStr) {
   const char *mac = (const char*)root[XIOTModuleJsonTag::MAC];
   const char *ip = (const char*)root[XIOTModuleJsonTag::ip];
   if(!name || !mac || !ip) {
-    _module->sendJson("{}", 500);
     return NULL;
   }
   Debug("SlaveCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
@@ -57,7 +84,8 @@ Slave* SlaveCollection::add(char* jsonStr) {
   
   slave->setName(name); // in case it's a new name for an already registered module.
   // check if one OTHER (not same mac) already registered module already has this name
-  if(alreadyExists(name, mac)) {
+  if(nameAlreadyExists(name, mac)) {
+    // Renaming will occur later, not within this request processing
     slave->setToRename(true);
   }  
   _refreshListBufferSize();
@@ -89,7 +117,7 @@ void SlaveCollection::_refreshListBufferSize() {
 
 char* SlaveCollection::list() {
   int size = getCount();
-  Serial.printf("SlaveCollection::list %d slaves\n", size);
+  Debug("SlaveCollection::list %d slaves\n", size);
   if(size == 0) {
     return strcpy((char*)malloc(3), "{}");  
   }
@@ -122,7 +150,7 @@ char* SlaveCollection::list() {
   int strBufferSize = _listBufferSize + customSize;
   char* strBuffer = (char *)malloc(strBufferSize); 
   root.printTo(strBuffer, strBufferSize-1);
-  Serial.printf("Reserved size: %d, actual size: %d\n", strBufferSize, strlen(strBuffer));
+  Debug("Reserved size: %d, actual size: %d\n", strBufferSize, strlen(strBuffer));
   return strBuffer;
 }
 
@@ -145,7 +173,7 @@ void SlaveCollection::reset() {
 
 void SlaveCollection::ping() {
   int size = getCount();
-  Debug("SlaveCollection::ping %d slaves -----------------\n", size);
+  Debug("SlaveCollection::ping %d slaves\n", size);
   bool canSleep;  // If true, must not be pinged
   const char *ip, *name; 
   
@@ -156,7 +184,7 @@ void SlaveCollection::ping() {
     if(!canSleep) {
       Serial.printf("Ping module '%s' on ip '%s'\n", name, ip);
       bool result = it->second->ping();
-      Serial.printf("Result: %s\n", result?"true":"false");
+      Serial.printf("Connected: %s\n", result?"true":"false");
       if(!result) {
         char message[100];
         sprintf(message, "Ping failed: %s", name);
@@ -191,7 +219,7 @@ void SlaveCollection::renameOne(Slave *slave) {
   while (!ok && strlen(newName) < NAME_MAX_LENGTH) {
     sprintf(newName, "%s_%d", alpha, ++digit);
     Debug("Testing name %s\n", newName);   
-    if(!alreadyExists(newName, slave->getMAC())) {
+    if(!nameAlreadyExists(newName, slave->getMAC())) {
       ok = true;
     }   
   }
@@ -206,7 +234,7 @@ void SlaveCollection::renameOne(Slave *slave) {
 /**
  * check if a name exists in the collection on a different mac
  */
-bool SlaveCollection::alreadyExists(const char* name, const char* mac) {
+bool SlaveCollection::nameAlreadyExists(const char* name, const char* mac) {
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
     if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getMAC(), mac) != 0))  {
       Debug("Found duplicate %s on ip %s\n", name, it->second->getIP()); // ip is easier for debugging since it's displayed on modules

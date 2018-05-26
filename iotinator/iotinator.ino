@@ -171,7 +171,7 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
 
 void addEndpoints() {
   server = module->getServer();  
-  server->on("/", [](){
+  server->on("/", HTTP_GET, [](){
     if (config->isAPInitialized()) {
       printAppPage();
     } else {
@@ -179,12 +179,12 @@ void addEndpoints() {
     }
   });
 
-  server->on("/init", [](){
+  server->on("/init", HTTP_GET, [](){
     printHomePage();
   });
 
 
-  server->on("/api/list", [](){
+  server->on("/api/list", HTTP_GET, [](){
     char *moduleListStr = slaveCollection->list();
     module->sendJson(moduleListStr, 200);
     free(moduleListStr); 
@@ -199,7 +199,7 @@ void addEndpoints() {
    * => may be slave modules could also create an access point and act as relay for
    * other modules.
    **/
-  server->on("/api/config", [](){
+  server->on("/api/config", HTTP_GET, [](){
 //    Serial.println("Rq on /api/config");
     char configMsg[JSON_STRING_CONFIG_SIZE];
     StaticJsonBuffer<JSON_BUFFER_CONFIG_SIZE> jsonBuffer;    
@@ -218,7 +218,7 @@ void addEndpoints() {
   });
 
   /**
-   * This endpoints allows slave modules to register themselves to master
+   * This endpoint allows slave modules to register themselves to master when they initialize
    */
   server->on("/api/register",  [](){
     char *jsonString;
@@ -238,13 +238,34 @@ void addEndpoints() {
         slaveToRename = slave;
       }
     }
-    Serial.printf("New slave count: %d\n", slaveCollection->getCount());    
+    char message[100];
+    sprintf(message, "Registered modules: %d", slaveCollection->getCount());    
+    Serial.println(message);
+    oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
   });
 
+  // This endpoint is used by modules when they want to update data in the slave collection
+  // (which is the data that the UI is polling)
+  server->on("/api/refresh", HTTP_POST, [](){
+    char *jsonString;
+    Serial.println("Refreshing module");
+    // This will allocate jsonString
+    XUtils::stringToCharP(server->arg("plain"), &jsonString);
+    // slaveCollection->add method need to copy the data since jsonString will be freed. 
+    Serial.println(jsonString); 
+    Slave* slave = slaveCollection->refresh(jsonString);
+    free(jsonString);
+    if(slave == NULL) {
+      module->sendJson("{}", 500);
+      oledDisplay->setLine(1, "Refreshing failed", TRANSIENT, NOT_BLINKING);
+    } else {
+      module->sendJson("{}", 200);
+    }          
+  });
   
   // TODO: remove this or make it better. Needed during dev
   // reset may be only possible by SMS from admin number ?
-  server->on("/api/swarmReset", [](){
+  server->on("/api/swarmReset",  HTTP_GET, [](){
     Serial.println("Rq on /swarmReset");
     slaveCollection->reset();
     config->initFromDefault();
@@ -304,7 +325,7 @@ void printHomePage() {
     sprintf(page, initPage, gsmEnabled ? "": "noGsm");
     module->sendHtml(page, 200);
     free(page);
-    server->on("/initSave", [](){
+    server->on("/initSave",  HTTP_POST, [](){
       Serial.println("Rq on /initSave");
       
       // TODO: /initSave might need to be disabled once done ?
