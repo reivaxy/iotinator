@@ -124,3 +124,10 @@ span.icon.icon-smile {
   display: block;
 }
 
+.footer.pong {
+  float:right;
+}
+.footer.pong.false {
+  background-color: red;
+}
+

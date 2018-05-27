@@ -103,7 +103,6 @@ $(document).ready(function() {
   <hr/>\
   <div class="footer pong <%- pong %>"></div>\
   <div class="footer localIP"><%- ip %></div>\
-  <div class="footer APName"><%- ssid %></div>\
 </div>'),
     initialize: function () {
       this.listenTo(this.model, 'change', this.render);
