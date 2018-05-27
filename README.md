@@ -40,7 +40,7 @@ Its goal is to control many different devices by SMS or through a webApp (or mob
   <img src="resources/iotinator.jpg" width="200px"/>
 
 
-Designing a few module is just a few lines of code, depending on its complexity, of course.
+Designing a new module can be just a few lines of code, depending on its complexity, of course.
 
 The master and the modules run on esp8266 hardware (will investigate esp32 hardware too, one board having an Oled screen already integrated), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
 
@@ -53,7 +53,7 @@ It connects to a domestic Wifi network to get time through NTP servers (but it c
 Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
 
-Current Status (2018/05/22):
+Current Status (2018/05/27):
 
 Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled.
 
