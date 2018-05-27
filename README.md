@@ -37,6 +37,8 @@ Iotinator is the master module of the Xiot framework.
 
 Its goal is to control many different devices by SMS or through a webApp (or mobile app), it's the common entry (and exit) point of communication. Once the master module is configured, adding a module is zero configuration: power the module up, reset the master, the new module will connect, and they'll negociate what happens next, which is use a private wifi network. Pre existing and connected modules will be disconnected for 30 seconds and automatically reconnect.
 
+  <img src="resources/iotinator.jpg" width="200px"/>
+
 
 Designing a few module is just a few lines of code, depending on its complexity, of course.
 
