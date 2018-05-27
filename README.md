@@ -2,7 +2,7 @@
 ### The global multipurpose home iot solution.
 
 
-TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction: https://github.com/reivaxy/iotinator/wiki
+TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
 
 You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
 
@@ -23,7 +23,7 @@ Examples of modules are:
 - Monitoring an aquarium parameters to alert when something's off (https://github.com/reivaxy/aquaMonitor)
 - You name it !
 
-(*) ok, not many are available at this time, it's a work in progress.
+(*) ok, not many are available at this time, it's a work in progress. Hopefully some people join, design and share their own!
 
 You read that far and want to know more ? Nice !
 
