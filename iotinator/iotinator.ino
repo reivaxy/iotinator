@@ -126,7 +126,6 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 }
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
-  Serial.println(MSG_WIFI_STATION_DISCONNECTED);
   oledDisplay->setLine(1, MSG_WIFI_STATION_DISCONNECTED, TRANSIENT, NOT_BLINKING);
   // TODO: remove it from slave collection ? 
   // Disconnection needs a long time to be triggered (15mn ?)
