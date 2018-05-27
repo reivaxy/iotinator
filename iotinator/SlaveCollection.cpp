@@ -29,7 +29,6 @@ Slave* SlaveCollection::refresh(char* jsonStr) {
     Serial.println("Refreshing: missing MAC addr");
     return NULL;
   }
-  char message[100];
   _module->getDisplay()->setLine(1, "Refreshing", TRANSIENT, NOT_BLINKING);
   _module->getDisplay()->setLine(2, mac, TRANSIENT, NOT_BLINKING);
   
@@ -42,7 +41,7 @@ Slave* SlaveCollection::refresh(char* jsonStr) {
   Slave *slave = it->second;
   _module->getDisplay()->setLine(2, slave->getName(), TRANSIENT, NOT_BLINKING);
   slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
-  return slave; 
+  return slave; // ptr to slave in collection, safe to return.
 }
 
 /**
