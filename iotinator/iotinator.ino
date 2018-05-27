@@ -67,7 +67,7 @@ void setup() {
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
   delay(100);
-  config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)CONFIG_NAME);
+  config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
   config->init();
   Serial.println(config->getName());
 

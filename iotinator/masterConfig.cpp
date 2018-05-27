@@ -7,7 +7,7 @@
 #include "masterConfig.h"
 
 // TODO: use XIOTConfig as super class. 
-MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEEPROMConfigClass(version, sizeof(MasterConfigStruct)) {
+MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEEPROMConfigClass(version, "iotinator", sizeof(MasterConfigStruct)) {
   setName(name);
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
@@ -22,7 +22,7 @@ MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEE
  */
 void MasterConfigClass::initFromDefault() {
   XEEPROMConfigClass::initFromDefault(); // handles version init
-  setName(CONFIG_NAME);
+  setName(MODULE_NAME);
   // Reset all registered phone numbers
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i]->reset();

@@ -11,7 +11,7 @@
 #include <XUtils.h>
 
 #define CONFIG_VERSION 1
-#define CONFIG_NAME "iotinator"
+#define MODULE_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
 #define DEFAULT_WEBAPP_HOST "http://www.iotinator.com/"
