@@ -64,7 +64,6 @@ Slave* SlaveCollection::add(char* jsonStr) {
     return NULL;
   }
   Debug("SlaveCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
-  char message[100];
   _module->getDisplay()->setLine(1, "Registering", TRANSIENT, NOT_BLINKING);
   _module->getDisplay()->setLine(2, name, TRANSIENT, NOT_BLINKING);
   Slave* slave = new Slave(name, mac, _module);
@@ -72,6 +71,7 @@ Slave* SlaveCollection::add(char* jsonStr) {
   std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(mac, slave));
   // If not inserted because exists, point to the one already registered so that we can update it
   if(!slaveIt.second) {
+    delete slave;
     slave = slaveIt.first->second;
   }
   // We need to update some fields...  
