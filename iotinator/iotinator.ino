@@ -72,7 +72,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-  oledDisplay = new DisplayClass(0x3C, D5, D6);
+  oledDisplay = new DisplayClass(0x3C, 14, 12);
   initDisplay();
   
   // Beware the module instantiation initializes the server
@@ -240,7 +240,6 @@ void addEndpoints() {
     }
     char message[100];
     sprintf(message, "Registered modules: %d", slaveCollection->getCount());    
-    Serial.println(message);
     oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
   });
 
