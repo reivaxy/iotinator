@@ -1,4 +1,15 @@
 
+// Namespace for Xiot framework specific stuff.
+var XIOT = {};
+
+
+XIOT.View = Backbone.View.extend({
+  xiotSync: function(model) {
+    Backbone.sync("update", model, {url:document.location.href + "api/data", headers:{"Xiot-forward-to": model.__ip}});
+  }
+  
+}); 
+
 
 $(document).ready(function() {
   $('body').append($('<div class="container-fluid" id="container"><h1>Iotinator</h1><div id="main"><div id="module-list" class="row"></div></div></div>'));

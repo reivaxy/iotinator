@@ -11,7 +11,7 @@ var switchUIClass = {
   }),
 
   // View for the switch module
-  View: Backbone.View.extend({
+  View: XIOT.View.extend({
     tagName: "div",
     template: _.template('\
 <div class="btn-group btn-group-toggle" data-toggle="buttons">\
@@ -35,7 +35,7 @@ var switchUIClass = {
       } else {
         this.model.set({status:"off"});
       }
-      Backbone.sync("update", this.model, {url:document.location.href + "api/data", headers:{"Xiot-forward-to": this.model.__ip}});
+      this.xiotSync(this.model);
     },
     render: function () {
       this.$el.html(this.template(this.model.toJSON()));
