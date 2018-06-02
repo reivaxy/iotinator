@@ -55,7 +55,7 @@ module pillar(x, y, xMargin, yMargin, zPanel) {
 echo (x, y, xMargin, yMargin, zPanel);
 
   translate([x + xMargin/2, y + yMargin/2, zPanel]) {
-    cylinder(d=1.9, h=8, $fn=50);
+    cylinder(d=1.6, h=8, $fn=50);
     cylinder(d=4, h=2, $fn=50);
     
   }
