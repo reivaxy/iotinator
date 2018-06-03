@@ -50,6 +50,12 @@ time_t timeLastPing = 0;
 SlaveCollection *slaveCollection;
 Slave* slaveToRename = NULL;
 
+
+int sdl = 12;
+int sda = 14;
+
+
+
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
 // that we want to reuse here :) 
 // TODO: when XIOTModule class can handle AP_STA, use it here to get rid of
@@ -64,6 +70,14 @@ bool displayAP = false;
 String ipOnHomeSsid;
 
 void setup() {
+
+//  #define ESP01
+  #ifdef ESP01
+  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
+  sdl = 2;
+  sda = 0;
+  #endif;
+
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
   delay(100);
@@ -72,7 +86,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-  oledDisplay = new DisplayClass(0x3C, 14, 12);
+    oledDisplay = new DisplayClass(0x3C, sda, sdl);
   initDisplay();
   
   // Beware the module instantiation initializes the server
