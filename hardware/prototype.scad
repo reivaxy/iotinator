@@ -104,6 +104,9 @@ module iotinator() {
 coverTolerance = 0.2;
 coverX = innerX - coverTolerance;
 coverY = innerY - coverTolerance;
+usbSocketX = 9;
+usbSocketY = 4;
+usbSocketYOffset = 9.6;
 
 module cover() {
     union() {
@@ -120,7 +123,11 @@ module cover() {
                    (coverY - rightHookY -0.2) - (coverY - rightHookY - 0.2)/4  + (wall + coverTolerance)/2,
                     wall - rightHookZ - 0.2 ]) {
           cube([rightHookX, rightHookY+0.2, rightHookZ + 2]);
-        }  
+        }
+        // usb socket
+        translate([(coverX - usbSocketX)/2, usbSocketYOffset, -0.5]) {
+          cube([usbSocketX, usbSocketY, wall + 1]);  
+        }
 
       }
       translate([coverX , (coverY - indentY + 0.2)/2, 0.2]) {
