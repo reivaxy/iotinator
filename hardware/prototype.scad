@@ -101,28 +101,30 @@ module iotinator() {
   }
 }
 
-coverTolerance = 0.2;
+coverTolerance = 0.4;
 coverX = innerX - coverTolerance;
 coverY = innerY - coverTolerance;
 usbSocketX = 9;
-usbSocketY = 4;
+usbSocketY = 5;
 usbSocketYOffset = 9.6;
 
 module cover() {
     union() {
       difference() {
         cube([coverX, coverY, wall - 0.1]);
-        translate([0, (coverY - leftHookY - 0.2)/2, wall - leftHookZ - 0.2])
-          cube([leftHookX +0.1, leftHookY + 0.2, rightHookZ + 2 ]);
+        
+        translate([0, (coverY - leftHookY - 0.6)/2, wall - leftHookZ - 0.2])
+          cube([leftHookX +0.1, leftHookY + 0.6, rightHookZ + 2 ]);
+        
         // bottom right cover Hook
-        translate([coverX - rightHookX, (coverY - rightHookY - 0.2)/4 - (wall + coverTolerance)/2,  wall - rightHookZ - 0.2]) {
-          cube([rightHookX, rightHookY+0.2, rightHookZ + 2]);
+        translate([coverX - rightHookX -0.2, (coverY - rightHookY - 0.6)/4 - (wall + coverTolerance)/2,  wall - rightHookZ - 0.2]) {
+          cube([rightHookX+0.2, rightHookY+0.6, rightHookZ + 2]);
         }
         // top right cover Hook
-        translate([coverX - rightHookX,  
-                   (coverY - rightHookY -0.2) - (coverY - rightHookY - 0.2)/4  + (wall + coverTolerance)/2,
+        translate([coverX - rightHookX -0.2,  
+                   (coverY - rightHookY -0.2) - (coverY - rightHookY - 0.6)/4  + (wall + coverTolerance)/2,
                     wall - rightHookZ - 0.2 ]) {
-          cube([rightHookX, rightHookY+0.2, rightHookZ + 2]);
+          cube([rightHookX+0.2, rightHookY+0.6, rightHookZ + 2]);
         }
         // usb socket
         translate([(coverX - usbSocketX)/2, usbSocketYOffset, -0.5]) {
