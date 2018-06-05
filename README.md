@@ -4,6 +4,8 @@
 
 TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
 
+<img src="resources/prototype/frontWithModule.jpg" width="400px"/>
+
 You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
 
 But you can easily design your own modules to fit your needs: in just a few lines of code, you can design a module able to connect to a wifi network, and equipped with a tiny Oled screen, to monitor something or control it, and make its collected data and actions available through a webApp showing all connected modules, but also through sending and receiving GSM text messages.
