@@ -4,6 +4,8 @@
 
 TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
 
+<img src="resources/prototype/frontWithModule.jpg" width="400px"/>
+
 You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
 
 But you can easily design your own modules to fit your needs: in just a few lines of code, you can design a module able to connect to a wifi network, and equipped with a tiny Oled screen, to monitor something or control it, and make its collected data and actions available through a webApp showing all connected modules, but also through sending and receiving GSM text messages.
@@ -25,7 +27,7 @@ Examples of modules are:
 
 (*) ok, not many are available at this time, it's a work in progress. Hopefully some people join, design and share their own!
 
-You read that far and want to know more ? Nice !
+### You read that far and want to know more ? Nice !
 
 Let's dive deeper:
 
@@ -42,13 +44,13 @@ Its goal is to control many different devices by SMS or through a webApp (or mob
 
 Designing a new module can be just a few lines of code, depending on its complexity, of course.
 
-The master and the modules run on esp8266 hardware (will investigate esp32 hardware too, one board having an Oled screen already integrated), connected to a SIM900 chip and an Oled screen, and offers an interface to slave modules in order to monitor them through SMS and webApps.
+The master and the modules run on esp8266 hardware (will investigate esp32 hardware too, one board having an Oled screen already integrated), connected to a SIM900 chip and an Oled screen, and offers an interface to agent modules in order to monitor them through SMS and webApps.
 
 The Iotinator master module exposes APIs to communicate with the modules, and dispatches and forwards messages received by SMS or from the web app to them, and sends their responses back.
 
 These API also allow modules to record logs, stats, etc on a website, and expose a web UI for module configuration and status diplay.
 
-It connects to a domestic Wifi network to get time through NTP servers (but it can also get time from GSM network), and record logs and stats on a web server, much like http://reeftankalert.com/chart.php) and exposes a "private" Wifi network to communicate with slave modules.
+It connects to a domestic Wifi network to get time through NTP servers (but it can also get time from GSM network), and record logs and stats on a web server, much like http://reeftankalert.com/chart.php) and exposes a "private" Wifi network to communicate with agent modules.
 
 Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
