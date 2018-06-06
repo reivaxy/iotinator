@@ -1,12 +1,12 @@
 {
-    "5c:cf:7f:24:7a:ef": {
-        "name": "Switch",
+    "60:01:94:0c:31:13": {
+        "name": "Switch_3",
         "ip": "192.168.4.2",
-        "canSleep": true,
+        "canSleep": false,
         "pong": true,
         "uiClassName": "switchUIClass",
-        "heap": 0,
-        "custom": "FaaaaabbE"
+        "heap": 37624,
+        "custom": "{\"status\":\"off\"}"
     },
     "60:01:94:0c:31:14": {
         "name": "Leak",
