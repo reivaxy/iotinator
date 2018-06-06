@@ -27,8 +27,9 @@ indentZ = wall;
 rail = 2;
 corner = 4;
 
+batteryBracket();
 
-cover();
+//cover();
 // iotinator();
 //closed();
 
@@ -36,6 +37,32 @@ module closed() {
   iotinator();
   translate([wall + coverTolerance/2, wall + coverTolerance/2, outerZ - wall]) {
     cover();
+  }
+}
+
+
+module batteryBracket() {
+  x = 20;
+  x2 = 18;
+  z = 4.5;
+  difference() {
+    union() {
+      cube([x, x/2, z]);
+      translate([x/2, 0, 0]) {
+        cylinder(d=x, h=z, $fn=80);
+      }
+    }
+    union() {
+      translate([x/2, 0, 0.5]) {
+        cylinder(d = x2, h = z, $fn = 80);
+      }
+      translate([(x - x2)/2, 0, 0.5]) {
+        cube([x2, x2, z]);
+      }
+    }
+    translate([(x - 5)/2, -x/2, 0.5]) {
+      cube([5, 1.5, 1.5]);
+    }
   }
 }
 
