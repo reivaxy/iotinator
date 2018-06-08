@@ -33,7 +33,7 @@ Let's dive deeper:
 
 Xiot is a framework consisting of set of classes available as libraries, that make easy Wifi connection, Oled screen display, information exchange, web app interface.
 
-An Xiot swarm is composed of a iotinator "master" module, and a bunch of modules (bunch start at one...).
+An Xiot swarm is composed of a iotinator "master" module, and a bunch of agent modules (bunch start at one...).
 
 Iotinator is the master module of the Xiot framework.
 
@@ -55,7 +55,7 @@ It connects to a domestic Wifi network to get time through NTP servers (but it c
 Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
 
-Current Status (2018/05/27):
+# Current Status (2018/05/27):
 
 Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled.
 
@@ -74,7 +74,7 @@ The framework takes care of wifi connection to the iotinator master, registratio
 
 To create a new module, just get the iotSwitch repo, rename it, and the files within, and the classes they contain, and the code is totally self explanatory (No, just kidding).
 
-For now the UI files (js, css) of each module is in the iotinator repository, which is not awesome...
+For now the UI files (js, css) of each module are in the iotinator repository, which is not awesome...
 
 The UI framework is taking care of displaying one block for each module connected with their connection information and providing the module's generic and custom data, and each module needs to provide the UI elements to display/handle its custom data within these blocks, and send actions to the REST api.
 
@@ -101,6 +101,8 @@ You'll need to clone these repositories into your arduino "libraries" directory 
 And some libraries that can be found through the Arduino IDE
 
 TODO: list the libraries :)
+
+Check the wiki! https://github.com/reivaxy/iotinator/wiki
 
 Picture of the early prototype with its SIM800 board:
 
