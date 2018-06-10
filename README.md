@@ -88,21 +88,9 @@ Of course you'll need to add the .htaccess directive:
 
 Header set Access-Control-Allow-Origin "*"
 
+In the wiki, you'll find all the information to setup your development environment, the libraries to install, and the necessary hardware.
 
-You'll need to clone these repositories into your arduino "libraries" directory to be able to compile:
-
-- https://github.com/reivaxy/XOLEDDisplay.git 
-- https://github.com/reivaxy/XIOTDisplay.git
-- https://github.com/reivaxy/XEEPROMConfig.git
-- https://github.com/reivaxy/XUtils.git
-- https://github.com/reivaxy/XIOTModule.git
-- https://github.com/reivaxy/XIOTConfig.git
-
-And some libraries that can be found through the Arduino IDE
-
-TODO: list the libraries :)
-
-Check the wiki! https://github.com/reivaxy/iotinator/wiki
+https://github.com/reivaxy/iotinator/wiki
 
 Picture of the early prototype with its SIM800 board:
 
@@ -110,6 +98,8 @@ Picture of the early prototype with its SIM800 board:
 
 
 Screen shot of the first draft of the webApp, showing 2 connected modules.
+
+<img src="resources/webApp.png" width="400px"/>
 
 The data is refreshed every 10 seconds and reflects the status of the modules. A click on the button allows to control the Switch.
 
@@ -119,4 +109,3 @@ It's fast and light !
 
 This one is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
 
-<img src="resources/webApp.png" width="400px"/>
