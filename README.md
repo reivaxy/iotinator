@@ -4,7 +4,16 @@
 
 TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
 
+Here is the master module with a prototype switch module
+
 <img src="resources/prototype/frontWithModule.jpg" width="400px"/>
+
+
+And here is the switch module encased and functional:
+
+
+<img src="resources/prototype/finished.jpg" width="400px"/>
+
 
 You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
 
