@@ -1,5 +1,5 @@
 # iotinator
-### The global multipurpose home iot solution.
+### The DIY multipurpose home iot solution.
 
 
 TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
