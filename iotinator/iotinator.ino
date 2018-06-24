@@ -373,7 +373,7 @@ void printHomePage() {
       }
       // Read and save the web app server      
       String appHost = server->arg("appHost");
-      if (apSsid.length() > 0) {
+      if (appHost.length() > 0) {
         // TODO: add checks
         config->setAppHost(appHost);
       }
