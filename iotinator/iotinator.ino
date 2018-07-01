@@ -51,7 +51,7 @@ SlaveCollection *slaveCollection;
 Slave* slaveToRename = NULL;
 
 
-int sdl = 12;
+int scl = 12;
 int sda = 14;
 
 
@@ -75,7 +75,7 @@ void setup() {
  // #define ESP01
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
-  sdl = 2;
+  scl = 2;
   sda = 0;
   #endif
 
@@ -87,7 +87,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-    oledDisplay = new DisplayClass(0x3C, sda, sdl);
+    oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
   // Beware the module instantiation initializes the server
