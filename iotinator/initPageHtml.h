@@ -24,6 +24,7 @@ body.noGsm .ifGsm {\
   <input name='homeSsid' type='text' placeholder='" MSG_INIT_HOME_SSID "'/><br/>\
   <input name='homePwd' type='text' placeholder='" MSG_INIT_HOME_PWD "'/><br/>\
   <input name='appHost' type='text' placeholder='" MSG_INIT_WEBAPP_HOST "'/><br/>\
+  <input name='ntpHost' type='text' placeholder='" MSG_INIT_NTP_HOST "'/><br/>\
   <input type='submit'/>\
 </form>\
 </body>\

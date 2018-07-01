@@ -10,11 +10,13 @@
 #include <XIOTConfig.h>
 #include <XUtils.h>
 
-#define CONFIG_VERSION 2
+#define CONFIG_VERSION 3
 #define MODULE_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
 #define DEFAULT_WEBAPP_HOST "http://www.iotinator.com/"
+#define DEFAULT_NTP_SERVER "0.europe.pool.ntp.org"
+
 #define DEFAULT_STAT_PERIOD 1800000 // Half an hour. Should 0 be default ?
 
 #define DEFAULT_GMT_HOUR_OFFSSET 2
@@ -27,6 +29,11 @@ struct MasterConfigStruct:XEEPROMConfigDataStruct {
   phoneNumberDataType registeredNumbers[MAX_PHONE_NUMBERS];
   // Hostname for webapps, statistics, etc
   char webAppHost[HOSTNAME_MAX_LENGTH + 1];
+    
+  // ntp server
+  char ntpHostName[HOSTNAME_MAX_LENGTH + 1];
+
+
   // Period at which statistics are sent to web server. 0 means no stat sent
   unsigned int statPeriod = DEFAULT_STAT_PERIOD;
   
@@ -57,6 +64,8 @@ public:
   void setHomeSsid(const char* ssid);
   void setAppHost(const char* appHost);
   void setAppHost(String appHost);
+  void setNtpServer(String ntpServer);
+  void setNtpServer(const char *ntpServer);
   void setHomeSsid(String ssid);
   void setHomePwd(const char* pwd);
   void setHomePwd(String pwd);
@@ -66,6 +75,7 @@ public:
   void setApPwd(String pwd);
   char* getHomeSsid(void);
   char* getAppHost(void);
+  char* getNtpServer(void);
   char* getHomePwd(void);
   char* getApSsid(bool force=false);
   char* getApPwd(bool force=false);

@@ -67,6 +67,7 @@ static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
 bool defaultAP = true;
 bool displayAP = false;
+bool canInitNtp = false;
 String ipOnHomeSsid;
 
 void setup() {
@@ -152,7 +153,12 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
   wifiDisplay();
-  NTP.setInterval(90, 7200); // retry every 90s on failure. Refresh every 2 hours
+  canInitNtp = true;
+}
+
+void initNtp() {
+  Serial.printf("Fetching time from %s\n", config->getNtpServer());
+  NTP.setInterval(180, 7200);  // 3mn retry, 2 hours refresh
   NTP.begin();
   NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
   NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
@@ -170,6 +176,7 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
       timeDisplay();
     }
   });
+  canInitNtp = false;
 }
 
 void onSTADisconnected(WiFiEventStationModeDisconnected event) {
@@ -377,6 +384,13 @@ void printHomePage() {
         // TODO: add checks
         config->setAppHost(appHost);
       }
+            
+      // Read and save the ntp host      
+      String ntpHost = server->arg("ntpHost");
+      if (ntpHost.length() > 0) {
+        // TODO: add checks
+        config->setNtpServer(ntpHost);
+      }
       // Read and save new AP PWD 
       String apPwd = server->arg("apPwd");
       if( apPwd.length() > 0) {
@@ -534,6 +548,9 @@ void loop() {
     slaveCollection->ping();
   } 
   
+  if(canInitNtp) {
+    initNtp();
+  }
   delay(20);
   
 }
