@@ -26,7 +26,7 @@ var fanUIClass = {
         '<label class="btn btn-primary <%- speed==3?"active":"" %>" value="3">' +
         '<input type="radio" name="options" id="option3" autocomplete="off" <%- speed==3?"checked":"" %>>High</label>' +
       '</div>' +
-      '<button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="<%- osc?"true":"false" %>" autocomplete="off">Osc</button>'
+      '<button type="button" class="btn btn-primary <%- osc=="on"?"active":"" %>" data-toggle="button" aria-pressed="<%- osc=="on"?"true":"false" %>" autocomplete="off">Osc</button>'
       
     ),
     
@@ -42,16 +42,16 @@ var fanUIClass = {
       let value = parseInt(label.getAttribute("value"));
       // We don't want to refresh the DOM to keep default bootstrap button handling
       // this.model.set({speed: value});
-      this.model.attributes.speed = value;
+      this.model.set('speed', value);
       this.xiotSync(this.model);
     },
     oscillation: function(e) {
       let button = e.target;
       let previous = button.getAttribute("aria-pressed");
       if("true" === previous) {
-        this.model.attributes.osc = "off";
+        this.model.set('osc', "off");
       } else {
-        this.model.attributes.osc = "on";
+        this.model.set('osc', "on");
       }
       this.xiotSync(this.model);
     },
