@@ -71,12 +71,12 @@ String ipOnHomeSsid;
 
 void setup() {
 
-//  #define ESP01
+ // #define ESP01
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
   sdl = 2;
   sda = 0;
-  #endif;
+  #endif
 
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
@@ -152,7 +152,7 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
   wifiDisplay();
-  NTP.setInterval(7200);
+  NTP.setInterval(90, 7200); // retry every 90s on failure. Refresh every 2 hours
   NTP.begin();
   NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
   NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {

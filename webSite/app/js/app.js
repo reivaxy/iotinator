@@ -18,6 +18,7 @@ $(document).ready(function() {
   loadjscssfile("switchUIClass");
   loadjscssfile("leakUIClass");
   loadjscssfile("xeniaUIClass");
+  loadjscssfile("fanUIClass");
 
   function loadjscssfile(filename) {
     console.log("Loading js and css for " + filename );
@@ -149,6 +150,7 @@ $(document).ready(function() {
     },
 
     addOne: function(aModule) {
+      console.log("Adding " + aModule.id);
       let view = new moduleView({model: aModule, id: aModule.id});
       this.$("#module-list").append(view.render().el);
     },
@@ -161,7 +163,9 @@ $(document).ready(function() {
   let app = new AppView({model: modules, id: "modules"});
   window.app = app;
   setInterval(fetch, 11000);
-  fetch();
+  // Delay to allow module code to load. Temporary
+  // TODO: make module code loading dynamic 
+  setTimeout(fetch, 500);
 
   function fetch() {
     if(!$('body').hasClass("editing")) {

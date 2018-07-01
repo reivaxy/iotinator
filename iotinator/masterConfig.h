@@ -10,7 +10,7 @@
 #include <XIOTConfig.h>
 #include <XUtils.h>
 
-#define CONFIG_VERSION 1
+#define CONFIG_VERSION 2
 #define MODULE_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
