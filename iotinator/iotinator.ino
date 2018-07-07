@@ -172,9 +172,9 @@ void initNtp() {
   if(ntpListenerInitialized) return;
   ntpListenerInitialized = true;
   Serial.printf("Fetching time from %s\n", config->getNtpServer());
-  NTP.setInterval(45, 7200);  // 45s retry, 2h refresh
-  NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
   NTP.begin(config->getNtpServer());
+  NTP.setInterval(63, 7200);  // 63s retry, 2h refresh
+  NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
 }
 
 void processNtpEvent() {
@@ -215,7 +215,6 @@ void addEndpoints() {
   server->on("/init", HTTP_GET, [](){
     printHomePage();
   });
-
 
   server->on("/api/list", HTTP_GET, [](){
     char *moduleListStr = slaveCollection->list();
