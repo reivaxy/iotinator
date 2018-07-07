@@ -37,6 +37,9 @@ GsmClass gsm(&serialSIM800);
 
 ESP8266WebServer* server;
 bool homeWifiConnected = false;
+bool homeWifiFirstConnected = false;
+NTPSyncEvent_t ntpEvent;
+bool ntpEventToProcess = false;
 bool ntpServerInitialized = false;
 unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
@@ -67,7 +70,7 @@ static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
 bool defaultAP = true;
 bool displayAP = false;
-bool canInitNtp = false;
+bool ntpListenerInitialized = false;
 String ipOnHomeSsid;
 
 void setup() {
@@ -120,7 +123,13 @@ void setup() {
   printNumbers();     
   
   wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
-  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected); 
+  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected);
+  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
+    Serial.printf("NTP event: %d\n", event);
+    ntpEventToProcess = true;
+    ntpEvent = event;
+  });
+     
 }
 
 // Opens the Wifi network Access Point.
@@ -152,33 +161,37 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   ipOnHomeSsid = ipInfo.ip.toString();
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
+  homeWifiFirstConnected = true;
+  if (mdns.begin("esp8266", WiFi.localIP())) {
+    Serial.println("MDNS responder started");
+  }
   wifiDisplay();
-  canInitNtp = true;
 }
 
 void initNtp() {
+  if(ntpListenerInitialized) return;
+  ntpListenerInitialized = true;
   Serial.printf("Fetching time from %s\n", config->getNtpServer());
-  NTP.setInterval(180, 7200);  // 3mn retry, 2 hours refresh
-  NTP.begin();
+  NTP.setInterval(45, 7200);  // 45s retry, 2h refresh
   NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
-  NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
-    if (error) {
-      Serial.print("NTP Time Sync error: ");
-      if (error == noResponse)
-        Serial.println("NTP server not reachable");
-      else if (error == invalidAddress)
-        Serial.println("Invalid NTP server address");
-      }
-    else {
-      Serial.print("Got NTP time: ");
-      Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
-      ntpServerInitialized = true;
-      timeDisplay();
-    }
-  });
-  canInitNtp = false;
+  NTP.begin(config->getNtpServer());
 }
 
+void processNtpEvent() {
+  if (ntpEvent) {
+    Serial.print("NTP Time Sync error: ");
+    if (ntpEvent == noResponse)
+      Serial.println("NTP server not reachable");
+    else if (ntpEvent == invalidAddress)
+      Serial.println("Invalid NTP server address");
+    }
+  else {
+    Serial.print("Got NTP time: ");
+    Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
+    ntpServerInitialized = true;
+    timeDisplay();
+  }
+}
 void onSTADisconnected(WiFiEventStationModeDisconnected event) {
   // Continuously get messages, so just output once.
   if(homeWifiConnected) {
@@ -503,6 +516,12 @@ void wifiDisplay() {
  * Main Loop
  *********************************/
 void loop() {
+
+  if(ntpEventToProcess) {
+    ntpEventToProcess = false;
+    processNtpEvent();
+  }
+
   now();  // Needed to refresh the Time lib, so that NTP server is called
   // X seconds after reset, switch to custom AP if set
   if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
@@ -548,8 +567,11 @@ void loop() {
     slaveCollection->ping();
   } 
   
-  if(canInitNtp) {
+  // Things to do only once after connection to internet.
+  if(homeWifiFirstConnected) {
+  // Init ntp   
     initNtp();
+    homeWifiFirstConnected = false;
   }
   delay(20);
   
