@@ -75,7 +75,7 @@ String ipOnHomeSsid;
 
 void setup() {
 
- // #define ESP01
+ #define ESP01
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
   scl = 2;
