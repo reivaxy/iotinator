@@ -19,6 +19,7 @@ $(document).ready(function() {
   loadjscssfile("leakUIClass");
   loadjscssfile("xeniaUIClass");
   loadjscssfile("fanUIClass");
+  loadjscssfile("dimmerUIClass");
 
   function loadjscssfile(filename) {
     console.log("Loading js and css for " + filename );
