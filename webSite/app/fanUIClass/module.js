@@ -40,8 +40,6 @@ var fanUIClass = {
     speed: function(e) {
       let label = e.target;
       let value = parseInt(label.getAttribute("value"));
-      // We don't want to refresh the DOM to keep default bootstrap button handling
-      // this.model.set({speed: value});
       this.model.set('speed', value);
       this.xiotSync(this.model);
     },
