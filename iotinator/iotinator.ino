@@ -41,6 +41,7 @@ bool homeWifiFirstConnected = false;
 NTPSyncEvent_t ntpEvent;
 bool ntpEventToProcess = false;
 bool ntpServerInitialized = false;
+bool ntpTimeInitialized = false;
 unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
 unsigned long elapsed2s = 0;
@@ -169,8 +170,8 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
 }
 
 void initNtp() {
-  if(ntpListenerInitialized) return;
-  ntpListenerInitialized = true;
+  if(ntpServerInitialized) return;
+  ntpServerInitialized = true;
   Serial.printf("Fetching time from %s\n", config->getNtpServer());
   NTP.begin(config->getNtpServer());
   NTP.setInterval(63, 7200);  // 63s retry, 2h refresh
@@ -188,7 +189,7 @@ void processNtpEvent() {
   else {
     Serial.print("Got NTP time: ");
     Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
-    ntpServerInitialized = true;
+    ntpTimeInitialized = true;
     timeDisplay();
   }
 }
@@ -244,7 +245,7 @@ void addEndpoints() {
     root[XIOTModuleJsonTag::timestamp] = now();
     root[XIOTModuleJsonTag::homeWifiConnected] = homeWifiConnected;
     root[XIOTModuleJsonTag::gsmEnabled] = gsmEnabled;
-    root[XIOTModuleJsonTag::timeInitialized] = ntpServerInitialized;
+    root[XIOTModuleJsonTag::timeInitialized] = ntpTimeInitialized;
     root.printTo(configMsg, JSON_STRING_CONFIG_SIZE);
     module->sendJson(configMsg, 200);
   });
@@ -459,12 +460,12 @@ void initDisplay( void ) {
 }
 
 void timeDisplay() {
-  oledDisplay->clockIcon(!ntpServerInitialized);
+  oledDisplay->clockIcon(!ntpTimeInitialized);
   
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
   
   int millisec = millis();
-  if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
+  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];
