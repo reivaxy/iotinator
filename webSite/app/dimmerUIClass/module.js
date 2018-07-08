@@ -48,19 +48,28 @@ var dimmerUIClass = {
     level: function(e) {
       let value = $('#dimmerUIClassSlider')[0].value;
       console.log("Slider: ", value);
-      this.model.set('level', value);
+      // Rebuilding the DOM is not only useless here, it sucks
+      // this.model.set('level', value);
+      this.model.attributes.level = value;
       this.xiotSync(this.model);
     },
     render: function () {
-      this.$el.html(this.template(this.model.toJSON()));
-      setTimeout(function() {
-        $('#dimmerUIClassSlider').slider({
-          formatter: function(value) {
-            return value;
-          }
-        });
-        return this;
-      }, 100) ;
+      let slider = document.getElementById('dimmerUIClassSlider');
+      // first time the dom is built, need to add the slider
+      if(slider == null) {
+        this.$el.html(this.template(this.model.toJSON()));
+        setTimeout(function () {
+          $('#dimmerUIClassSlider').slider({
+            formatter: function (value) {
+              return value;
+            }
+          });
+          return this;
+        }, 100);
+      } else {
+        // If slider already exists, just update its value
+        $('#dimmerUIClassSlider').slider({value: this.model.get('level')});
+      }
     }
   })
 
