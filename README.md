@@ -106,7 +106,7 @@ Picture of the early prototype with its SIM800 board:
 <img src="resources/prototype.jpg" width="400px"/>
 
 
-Screen shot of the first draft of the webApp, showing 2 connected modules.
+Screen shot of the POC of the webApp, showing 3 connected modules.
 
 <img src="resources/webApp.png" width="400px"/>
 
