@@ -22,9 +22,9 @@ But you can easily design your own modules to fit your needs: in just a few line
 Some can operate using a small battery, others will need a power adapter, others can run directly on your main power source, or on a solar source.
 
 Examples of modules are:
-- Turning on/off a lamp, a heater, an air conditionner (Existing https://github.com/reivaxy/iotSwitch module, work in progress)
+- Turning on/off a lamp, a heater, an air conditionner (Existing https://github.com/reivaxy/iotSwitch module)
  
- Here is a picture of this module's Oled display (Don't be fooled by it's blurry aspect, the screen is actually sharp and good looking)
+ Here is a picture of this module's Oled display (Don't be fooled by its blurry aspect, the screen is actually sharp and good looking)
  
   <img src="resources/switch_ready.jpg" width="200px"/>
   
@@ -116,5 +116,5 @@ The UI is using Backbone and Bootstrap. A less than 1K page is served by the mas
 
 It's fast and light !
 
-This one is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
+The swith module is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
 
