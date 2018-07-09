@@ -15,11 +15,11 @@ var switchUIClass = {
     tagName: "div",
     template: _.template('\
 <div class="btn-group btn-group-toggle" data-toggle="buttons">\
-  <label class="btn btn-secondary <%- status==\"on\"?\"active\":\"\" %>">\
-    <input type="radio" name="options" id="optionOn" autocomplete="off" <%- status=="on"?"checked":"" %>> On\
-  </label>\
-  <label class="btn btn-secondary <%- status==\"off\"?\"active\":\"\" %>">\
+  <label class="btn btn-primary <%- status==\"off\"?\"active\":\"\" %>">\
     <input type="radio" name="options" id="optionOff" autocomplete="off" <%- status=="off"?"checked":"" %>> Off\
+  </label>\
+  <label class="btn btn-primary <%- status==\"on\"?\"active\":\"\" %>">\
+    <input type="radio" name="options" id="optionOn" autocomplete="off" <%- status=="on"?"checked":"" %>> On\
   </label>\
 </div>'),
     

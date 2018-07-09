@@ -29,6 +29,7 @@ void MasterConfigClass::initFromDefault() {
   }
   MasterConfigStruct* configPtr = _getDataPtr();
   XUtils::safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
+  XUtils::safeStringCopy(configPtr->ntpHostName, DEFAULT_NTP_SERVER, HOSTNAME_MAX_LENGTH);
   configPtr->statPeriod = DEFAULT_STAT_PERIOD;
   configPtr->homeSsid[0] = 0;
   configPtr->homePwd[0] = 0;
@@ -84,6 +85,14 @@ void MasterConfigClass::setAppHost(String appHostString) {
   appHostString.toCharArray(appHost, (unsigned int)HOSTNAME_MAX_LENGTH);
   setAppHost(appHost);
 }
+void MasterConfigClass::setNtpServer(const char* ntpServer) {
+  XUtils::safeStringCopy(_getDataPtr()->ntpHostName, ntpServer, HOSTNAME_MAX_LENGTH);
+}
+void MasterConfigClass::setNtpServer(String ntpServerString) {
+  char ntpServer[HOSTNAME_MAX_LENGTH + 1];
+  ntpServerString.toCharArray(ntpServer, (unsigned int)HOSTNAME_MAX_LENGTH);
+  setNtpServer(ntpServer);
+}
 
 void MasterConfigClass::setApSsid(String ssidString) {
   char ssid[SSID_MAX_LENGTH + 1];
@@ -109,6 +118,9 @@ char* MasterConfigClass::getAppHost(void) {
    return _getDataPtr()->webAppHost;
 }
 
+char* MasterConfigClass::getNtpServer(void) {
+   return _getDataPtr()->ntpHostName;
+}
 
 // For the first 60 seconds the default AP is opened
 char* MasterConfigClass::getApSsid(bool force) {

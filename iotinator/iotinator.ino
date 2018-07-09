@@ -37,7 +37,11 @@ GsmClass gsm(&serialSIM800);
 
 ESP8266WebServer* server;
 bool homeWifiConnected = false;
+bool homeWifiFirstConnected = false;
+NTPSyncEvent_t ntpEvent;
+bool ntpEventToProcess = false;
 bool ntpServerInitialized = false;
+bool ntpTimeInitialized = false;
 unsigned long elapsed200ms = 0;
 unsigned long elapsed500ms = 0;
 unsigned long elapsed2s = 0;
@@ -51,7 +55,7 @@ SlaveCollection *slaveCollection;
 Slave* slaveToRename = NULL;
 
 
-int sdl = 12;
+int scl = 12;
 int sda = 14;
 
 
@@ -67,14 +71,19 @@ static WiFiEventHandler wifiSTAGotIpHandler, wifiSTADisconnectedHandler,
                         stationConnectedHandler, stationDisconnectedHandler ;
 bool defaultAP = true;
 bool displayAP = false;
+bool ntpListenerInitialized = false;
 String ipOnHomeSsid;
 
 void setup() {
 
+<<<<<<< HEAD
   #define ESP01
+=======
+ #define ESP01
+>>>>>>> 3a6e6e26690ee735de3ced492a80ad7c963b48f7
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
-  sdl = 2;
+  scl = 2;
   sda = 0;
   #endif
 
@@ -86,7 +95,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-    oledDisplay = new DisplayClass(0x3C, sda, sdl);
+    oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
   // Beware the module instantiation initializes the server
@@ -119,7 +128,13 @@ void setup() {
   printNumbers();     
   
   wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
-  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected); 
+  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected);
+  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
+    Serial.printf("NTP event: %d\n", event);
+    ntpEventToProcess = true;
+    ntpEvent = event;
+  });
+     
 }
 
 // Opens the Wifi network Access Point.
@@ -151,27 +166,38 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   ipOnHomeSsid = ipInfo.ip.toString();
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
   homeWifiConnected = true;
+  homeWifiFirstConnected = true;
+  if (mdns.begin("esp8266", WiFi.localIP())) {
+    Serial.println("MDNS responder started");
+  }
   wifiDisplay();
-  NTP.setInterval(7200);
-  NTP.begin();
-  NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
-  NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
-    if (error) {
-      Serial.print("NTP Time Sync error: ");
-      if (error == noResponse)
-        Serial.println("NTP server not reachable");
-      else if (error == invalidAddress)
-        Serial.println("Invalid NTP server address");
-      }
-    else {
-      Serial.print("Got NTP time: ");
-      Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
-      ntpServerInitialized = true;
-      timeDisplay();
-    }
-  });
 }
 
+void initNtp() {
+  if(ntpServerInitialized) return;
+  ntpServerInitialized = true;
+  Serial.printf("Fetching time from %s\n", config->getNtpServer());
+  NTP.begin(config->getNtpServer());
+  NTP.setInterval(63, 7200);  // 63s retry, 2h refresh
+  NTP.setTimeZone(config->getGmtHourOffset(), config->getGmtMinOffset());
+}
+
+void processNtpEvent() {
+  if (ntpEvent) {
+    Serial.print("NTP Time Sync error: ");
+    if (ntpEvent == noResponse)
+      Serial.println("NTP server not reachable");
+    else if (ntpEvent == invalidAddress)
+      Serial.println("Invalid NTP server address");
+    }
+  else {
+    Serial.print("Got NTP time: ");
+    Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
+    ntpTimeInitialized = true;
+    timeDisplay();
+      NTP.setInterval(7200, 7200);  // 5h retry, 2h refresh. once we have time, refresh failure is not critical
+  }
+}
 void onSTADisconnected(WiFiEventStationModeDisconnected event) {
   // Continuously get messages, so just output once.
   if(homeWifiConnected) {
@@ -195,7 +221,6 @@ void addEndpoints() {
   server->on("/init", HTTP_GET, [](){
     printHomePage();
   });
-
 
   server->on("/api/list", HTTP_GET, [](){
     char *moduleListStr = slaveCollection->list();
@@ -225,7 +250,7 @@ void addEndpoints() {
     root[XIOTModuleJsonTag::timestamp] = now();
     root[XIOTModuleJsonTag::homeWifiConnected] = homeWifiConnected;
     root[XIOTModuleJsonTag::gsmEnabled] = gsmEnabled;
-    root[XIOTModuleJsonTag::timeInitialized] = ntpServerInitialized;
+    root[XIOTModuleJsonTag::timeInitialized] = ntpTimeInitialized;
     root.printTo(configMsg, JSON_STRING_CONFIG_SIZE);
     module->sendJson(configMsg, 200);
   });
@@ -355,7 +380,7 @@ void printHomePage() {
         return;
       }
       
-      // TODO enabled some controls
+      // TODO add some controls
       if (false && !server->hasArg("apSsid")) {
         module->sendText(MSG_ERR_BAD_REQUEST, 403);
         return;
@@ -385,6 +410,13 @@ void printHomePage() {
       if (appHost.length() > 0) {
         // TODO: add checks
         config->setAppHost(appHost);
+      }
+            
+      // Read and save the ntp host      
+      String ntpHost = server->arg("ntpHost");
+      if (ntpHost.length() > 0) {
+        // TODO: add checks
+        config->setNtpServer(ntpHost);
       }
       // Read and save new AP PWD 
       String apPwd = server->arg("apPwd");
@@ -442,12 +474,17 @@ void initDisplay( void ) {
 }
 
 void timeDisplay() {
-  oledDisplay->clockIcon(!ntpServerInitialized);
+  oledDisplay->clockIcon(!ntpTimeInitialized);
   
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
   
+<<<<<<< HEAD
   time_t millisec = millis();
   if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
+=======
+  int millisec = millis();
+  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
+>>>>>>> 3a6e6e26690ee735de3ced492a80ad7c963b48f7
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];
@@ -498,6 +535,12 @@ void wifiDisplay() {
  * Main Loop
  *********************************/
 void loop() {
+
+  if(ntpEventToProcess) {
+    ntpEventToProcess = false;
+    processNtpEvent();
+  }
+
   now();  // Needed to refresh the Time lib, so that NTP server is called
   // X seconds after reset, switch to custom AP if set
   if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
@@ -543,6 +586,12 @@ void loop() {
     slaveCollection->ping();
   } 
   
+  // Things to do only once after connection to internet.
+  if(homeWifiFirstConnected) {
+  // Init ntp   
+    initNtp();
+    homeWifiFirstConnected = false;
+  }
   delay(20);
   
 }

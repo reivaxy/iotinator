@@ -19,6 +19,7 @@ hr {
   border: 1px solid black;
   margin-bottom: 15px;
   position: relative;
+  padding: 2px;
 }
 
 .moduleWrapper div.footer {
@@ -26,6 +27,7 @@ hr {
   padding: 0 2px;
   font-size:0.9em;
 }
+
 .name {
   border-bottom: 1px solid grey;
   margin-bottom: 15px;
@@ -50,7 +52,7 @@ div.name div.commands {
 /*}*/
 
 .moduleWrapper div {
-  position: relative;
+  /*position: relative;*/
   padding: 2px;
 }
 

@@ -10,28 +10,38 @@ XIOT.View = Backbone.View.extend({
   
 }); 
 
+XIOT.loadJS = function(path) {
+  tag = document.createElement('script');
+  tag.setAttribute("type", "text/javascript");
+  tag.setAttribute("async", "false");
+  tag.setAttribute("src", "app/" + path);
+  document.getElementsByTagName("head")[0].appendChild(tag);
+};
+
+XIOT.loadCSS = function(path) {
+  document.getElementsByTagName("head")[0].appendChild(tag);
+  tag = document.createElement("link");
+  tag.setAttribute("rel", "stylesheet");
+  tag.setAttribute("type", "text/css");
+  tag.setAttribute("href", "app/" + path);
+  document.getElementsByTagName("head")[0].appendChild(tag);
+};
 
 $(document).ready(function() {
   $('body').append($('<div class="container-fluid" id="container"><h1>Iotinator</h1><div id="main"><div id="module-list" class="row"></div></div></div>'));
   
-  // TODO: make this dynamic !
-  loadjscssfile("switchUIClass");
-  loadjscssfile("leakUIClass");
-  loadjscssfile("xeniaUIClass");
-
-  function loadjscssfile(filename) {
+  // TODO: make this dynamic, loading modules present in the list api response
+  loadModuleFiles("switchUIClass");
+  loadModuleFiles("leakUIClass");
+  loadModuleFiles("xeniaUIClass");
+  loadModuleFiles("fanUIClass");
+  loadModuleFiles("dimmerUIClass");
+  
+  function loadModuleFiles(filename) {
     console.log("Loading js and css for " + filename );
-    filename = "/app/" + filename + "/module";
-    tag = document.createElement('script');
-    tag.setAttribute("type", "text/javascript");
-    tag.setAttribute("async", "false");
-    tag.setAttribute("src", filename + ".js");
-    document.getElementsByTagName("head")[0].appendChild(tag);
-    tag = document.createElement("link");
-    tag.setAttribute("rel", "stylesheet");
-    tag.setAttribute("type", "text/css");
-    tag.setAttribute("href", filename + ".css");
-    document.getElementsByTagName("head")[0].appendChild(tag);
+    filename = filename + "/module";
+    XIOT.loadJS(filename + ".js");
+    XIOT.loadCSS(filename + ".css");
   }
   
   let moduleModel = Backbone.Model.extend({
@@ -134,7 +144,7 @@ $(document).ready(function() {
       if(moduleUIClass in window) {
         this.__moduleView.setElement(this.$el.find(".moduleContent").first());
         this.__moduleModel.set(jsonModel.custom);
-        this.__moduleView.$el.html(this.__moduleView.template(this.__moduleModel.toJSON()));
+        this.__moduleView.render();
       }
       
       return this;
@@ -149,6 +159,7 @@ $(document).ready(function() {
     },
 
     addOne: function(aModule) {
+      console.log("Adding " + aModule.id);
       let view = new moduleView({model: aModule, id: aModule.id});
       this.$("#module-list").append(view.render().el);
     },
@@ -160,8 +171,9 @@ $(document).ready(function() {
   
   let app = new AppView({model: modules, id: "modules"});
   window.app = app;
-  setInterval(fetch, 11000);
-  fetch();
+  // Delay to allow module code to load. Temporary
+  // TODO: make module code loading dynamic 
+  setTimeout(fetch, 500);
 
   function fetch() {
     if(!$('body').hasClass("editing")) {
@@ -171,10 +183,12 @@ $(document).ready(function() {
         reset: false,
         error: function(collection, response, options) {
           $('body').addClass('fetchingError');
+          setTimeout(fetch, 11000);
           //debugger;
         },
         complete: function() {
           $('body').removeClass('fetching');
+          setTimeout(fetch, 11000);
         }
       });
     }
