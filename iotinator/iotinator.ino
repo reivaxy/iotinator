@@ -191,6 +191,7 @@ void processNtpEvent() {
     Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
     ntpTimeInitialized = true;
     timeDisplay();
+      NTP.setInterval(7200, 7200);  // 5h retry, 2h refresh. once we have time, refresh failure is not critical
   }
 }
 void onSTADisconnected(WiFiEventStationModeDisconnected event) {
@@ -366,7 +367,7 @@ void printHomePage() {
         return;
       }
       
-      // TODO enabled some controls
+      // TODO add some controls
       if (false && !server->hasArg("apSsid")) {
         module->sendText(MSG_ERR_BAD_REQUEST, 403);
         return;

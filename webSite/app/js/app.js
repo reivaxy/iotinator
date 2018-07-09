@@ -171,7 +171,6 @@ $(document).ready(function() {
   
   let app = new AppView({model: modules, id: "modules"});
   window.app = app;
-  setInterval(fetch, 11000);
   // Delay to allow module code to load. Temporary
   // TODO: make module code loading dynamic 
   setTimeout(fetch, 500);
@@ -184,10 +183,12 @@ $(document).ready(function() {
         reset: false,
         error: function(collection, response, options) {
           $('body').addClass('fetchingError');
+          setTimeout(fetch, 11000);
           //debugger;
         },
         complete: function() {
           $('body').removeClass('fetching');
+          setTimeout(fetch, 11000);
         }
       });
     }
