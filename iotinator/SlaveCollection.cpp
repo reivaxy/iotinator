@@ -79,6 +79,8 @@ Slave* SlaveCollection::add(char* jsonStr) {
   slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
   slave->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
   slave->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
+  slave->setPingPeriod((int)root[XIOTModuleJsonTag::pingPeriod]);  // Will set it to 0 if absent
+
   slave->setIP(ip);
   
   slave->setName(name); // in case it's a new name for an already registered module.

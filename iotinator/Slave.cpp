@@ -77,6 +77,24 @@ void Slave::setCanSleep(bool canSleep) {
   _canSleep = canSleep;
 }
 
+int Slave::getPingPeriod() {
+  return _pingPeriod;
+}
+
+void Slave::setPingPeriod(int pingPeriod) {
+  // If value too small, keep default (legacy: when absent, value is 0)
+  if(pingPeriod >= MIN_PING_PERIOD ) {
+    _pingPeriod = pingPeriod;
+  }
+}
+int Slave::getLastPing() {
+  return _lastPing;
+}
+
+void Slave::setLastPing(int timestamp) {
+  _lastPing = timestamp;
+}
+
 void Slave::setCustom(const char *custom) {
   Debug("Slave::setCustom\n");
   free(_custom); // This field is manually allocated, so it must be freed.

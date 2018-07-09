@@ -76,7 +76,7 @@ String ipOnHomeSsid;
 
 void setup() {
 
- #define ESP01
+  #define ESP01
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
   scl = 2;
@@ -91,7 +91,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-    oledDisplay = new DisplayClass(0x3C, sda, scl);
+  oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
   // Beware the module instantiation initializes the server
@@ -254,7 +254,7 @@ void addEndpoints() {
   /**
    * This endpoint allows slave modules to register themselves to master when they initialize
    */
-  server->on("/api/register",  [](){
+  server->on("/api/register", HTTP_POST, [](){
     char *jsonString;
     Serial.println("Registering module");
     // This will allocate jsonString
@@ -275,6 +275,15 @@ void addEndpoints() {
     char message[100];
     sprintf(message, "Registered modules: %d", slaveCollection->getCount());    
     oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
+  });
+
+  /**
+   * This endpoint allows removing a module
+   */
+  server->on("/api/register", HTTP_DELETE, [](){
+    char *jsonString;
+    Serial.println("Unregistering module");
+
   });
 
   // This endpoint is used by modules when they want to update data in the slave collection
@@ -465,8 +474,8 @@ void timeDisplay() {
   
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
   
-  int millisec = millis();
-  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
+  time_t millisec = millis();
+  if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];

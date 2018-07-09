@@ -12,6 +12,9 @@
 
 //#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
 
+#define DEFAULT_PING_PERIOD 60
+#define MIN_PING_PERIOD 30
+
 #ifdef DEBUG_SLAVE
 #define Debug(...) Serial.printf(__VA_ARGS__)
 #else
@@ -42,6 +45,10 @@ public:
    */
   bool getCanSleep();
   void setCanSleep(bool);
+  int getPingPeriod();
+  void setPingPeriod(int);
+  int getLastPing();
+  void setLastPing(int);
   void setCustom(const char*);
   const char* getCustom();
   void renameTo(const char* newName);
@@ -56,7 +63,9 @@ protected:
   bool _pong = false;  // Is true if last ping was successful
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
-  uint32_t _heap = 0; 
+  int _pingPeriod = DEFAULT_PING_PERIOD; // default ping period is 60 seconds
+  time_t _lastPing = 0;
+  uint32_t _heap = 0;
   char * _custom = NULL; // custom data sent by module at registration, dynamicall allocated
 
 }; 
