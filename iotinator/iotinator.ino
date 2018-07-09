@@ -76,11 +76,7 @@ String ipOnHomeSsid;
 
 void setup() {
 
-<<<<<<< HEAD
   #define ESP01
-=======
- #define ESP01
->>>>>>> 3a6e6e26690ee735de3ced492a80ad7c963b48f7
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
   scl = 2;
@@ -95,7 +91,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-    oledDisplay = new DisplayClass(0x3C, sda, scl);
+  oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
   // Beware the module instantiation initializes the server
@@ -478,13 +474,8 @@ void timeDisplay() {
   
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
   
-<<<<<<< HEAD
   time_t millisec = millis();
   if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
-=======
-  int millisec = millis();
-  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
->>>>>>> 3a6e6e26690ee735de3ced492a80ad7c963b48f7
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];
