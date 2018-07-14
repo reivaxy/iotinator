@@ -176,13 +176,15 @@ void SlaveCollection::ping() {
   int size = getCount();
   Debug("SlaveCollection::ping %d slaves\n", size);
   bool canSleep;  // If true, must not be pinged
-  const char *ip, *name; 
+  const char *ip, *name;
+  int pingPeriod;
   
   for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
     ip = it->second->getIP();
     name = it->second->getName();
     canSleep = (bool)it->second->getCanSleep();
-    if(!canSleep) {
+    pingPeriod = (bool)it->second->getPingPeriod();
+    if(!canSleep && pingPeriod > 0) {
       Serial.printf("Ping module '%s' on ip '%s'\n", name, ip);
       bool result = it->second->ping();
       Serial.printf("Connected: %s\n", result?"true":"false");
@@ -192,7 +194,7 @@ void SlaveCollection::ping() {
         _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);      
       }
     } else {
-      Serial.printf("Not ping module '%s' on ip '%s' (canSleep)\n", name, ip);
+      Serial.printf("Not pinging module '%s' on ip '%s': canSleep: %d, pingPeriod: %d\n", name, ip, canSleep, pingPeriod);
     }
   }
   uint32_t freeMem = system_get_free_heap_size();
