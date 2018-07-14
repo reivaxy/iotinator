@@ -1,102 +1,102 @@
 /**
- *  Class handling Slave module registered in iotinator master 
+ *  Class handling Agent module registered in iotinator master
  *  Xavier Grosjean 2018
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
 
-#include "Slave.h" 
+#include "Agent.h"
 
 /*********************************************************************
- * Class to handle one slave module in master
+ * Class to handle one agent module in master
  *
  *********************************************************************/
-Slave::Slave(const char* name, const char* mac, XIOTModule* module) {
+Agent::Agent(const char* name, const char* mac, XIOTModule* module) {
   XUtils::safeStringCopy(_name, name, NAME_MAX_LENGTH);
   XUtils::safeStringCopy(_mac, mac, NAME_MAX_LENGTH);
   _module = module;
 }
 
-Slave::~Slave() {
+Agent::~Agent() {
   free(_custom);
 }
 
-const char* Slave::getName() {
-  Debug("Slave::getName\n");
+const char* Agent::getName() {
+  Debug("Agent::getName\n");
   return _name;
 }
-void Slave::setName(const char* name) {
+void Agent::setName(const char* name) {
   XUtils::safeStringCopy(_name, name, NAME_MAX_LENGTH);
 }
 
-const char* Slave::getIP() {
-  Debug("Slave::getIP\n");
+const char* Agent::getIP() {
+  Debug("Agent::getIP\n");
   return _ip;
 }
 
-const char* Slave::getMAC() {
-  Debug("Slave::getMAC\n");
+const char* Agent::getMAC() {
+  Debug("Agent::getMAC\n");
   return _mac;
 }
 
-void Slave::setIP(const char* ip) {
+void Agent::setIP(const char* ip) {
   XUtils::safeStringCopy(_ip, ip, DOUBLE_IP_MAX_LENGTH);
 }
 
-void Slave::setUiClassName(const char* uiClassName) {
+void Agent::setUiClassName(const char* uiClassName) {
   XUtils::safeStringCopy(_uiClassName, uiClassName, UI_CLASS_NAME_MAX_LENGTH);
 }
-const char* Slave::getUiClassName() {
+const char* Agent::getUiClassName() {
   return _uiClassName;
 }
 
-bool Slave::getPong() {
+bool Agent::getPong() {
   return _pong;
 }
 
-void Slave::setToRename(bool flag) {
+void Agent::setToRename(bool flag) {
   _toRename = flag;
 }
 
-bool Slave::getToRename() {
+bool Agent::getToRename() {
   return _toRename;
 }
 
-void Slave::setHeap(uint32_t heap) {
+void Agent::setHeap(uint32_t heap) {
   _heap = heap;
 }
 
-uint32_t Slave::getHeap() {
+uint32_t Agent::getHeap() {
   return _heap;
 }
 
-bool Slave::getCanSleep() {
+bool Agent::getCanSleep() {
   return _canSleep;
 }
 
-void Slave::setCanSleep(bool canSleep) {
+void Agent::setCanSleep(bool canSleep) {
   _canSleep = canSleep;
 }
 
-int Slave::getPingPeriod() {
+int Agent::getPingPeriod() {
   return _pingPeriod;
 }
 
-void Slave::setPingPeriod(int pingPeriod) {
+void Agent::setPingPeriod(int pingPeriod) {
   // If value too small, keep default (legacy: when absent, value is 0)
   if(pingPeriod >= MIN_PING_PERIOD ) {
     _pingPeriod = pingPeriod;
   }
 }
-int Slave::getLastPing() {
+int Agent::getLastPing() {
   return _lastPing;
 }
 
-void Slave::setLastPing(int timestamp) {
+void Agent::setLastPing(int timestamp) {
   _lastPing = timestamp;
 }
 
-void Slave::setCustom(const char *custom) {
-  Debug("Slave::setCustom\n");
+void Agent::setCustom(const char *custom) {
+  Debug("Agent::setCustom\n");
   free(_custom); // This field is manually allocated, so it must be freed.
   _custom = NULL;
 
@@ -108,16 +108,16 @@ void Slave::setCustom(const char *custom) {
   if(size > MAX_CUSTOM_DATA_SIZE) {
     Serial.println(CUSTOM_DATA_TOO_BIG_VALUE);
     size = strlen(CUSTOM_DATA_TOO_BIG_VALUE) ;
-    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister slave, or overwrite one...
+    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister agent, or overwrite one...
     XUtils::safeStringCopy(_custom, CUSTOM_DATA_TOO_BIG_VALUE, size);
   } else {
-    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister slave, or overwrite one...
+    _custom = (char *)malloc(size + 1);   // Will need to be freed, when we unregister agent, or overwrite one...
     XUtils::safeStringCopy(_custom, custom, size);
   }
 }
 
-const char* Slave::getCustom() {
-  Debug("Slave::getCustom\n");
+const char* Agent::getCustom() {
+  Debug("Agent::getCustom\n");
   if(_custom != NULL) {
     if(strcmp(_custom, CUSTOM_DATA_TOO_BIG_VALUE) == 0) {
       Serial.println(CUSTOM_DATA_TOO_BIG_VALUE);
@@ -128,8 +128,8 @@ const char* Slave::getCustom() {
   return _custom;
 }
 
-void Slave::renameTo(const char* newName) {
-  Debug("Slave::renameTo %s\n", getIP());  // ip is easier for debug since displayed on slaves
+void Agent::renameTo(const char* newName) {
+  Debug("Agent::renameTo %s\n", getIP());  // ip is easier for debug since displayed on agents
   int httpCode;
   char renameMsg[101];
   const int bufferSize = JSON_OBJECT_SIZE(1);
@@ -150,8 +150,8 @@ void Slave::renameTo(const char* newName) {
   }  
 }
 
-bool Slave::ping() {
-  Debug("Slave::ping\n");
+bool Agent::ping() {
+  Debug("Agent::ping\n");
   int httpCode;
   _pong = false;
   int resultSize = 100 + MAX_CUSTOM_DATA_SIZE; 
@@ -171,8 +171,8 @@ bool Slave::ping() {
   return _pong;
 }
 
-bool Slave::reset() {
-  Debug("Slave::reset\n");
+bool Agent::reset() {
+  Debug("Agent::reset\n");
   int httpCode;
   _module->APIGet(getIP(), "/api/moduleReset", &httpCode);  
   return (httpCode == 200);

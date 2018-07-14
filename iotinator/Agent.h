@@ -1,5 +1,5 @@
 /**
- *  Class handling Slave module registered in iotinator master 
+ *  Class handling Agent module registered in iotinator master
  *  Xavier Grosjean 2018
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
@@ -10,23 +10,23 @@
 #include <XIOTModule.h>
 #include <XUtils.h>
 
-//#define DEBUG_SLAVE // Uncomment this to enable debug messages over serial port
+//#define DEBUG_AGENT // Uncomment this to enable debug messages over serial port
 
 #define DEFAULT_PING_PERIOD 60
 #define MIN_PING_PERIOD 30
 
-#ifdef DEBUG_SLAVE
+#ifdef DEBUG_AGENT
 #define Debug(...) Serial.printf(__VA_ARGS__)
 #else
 #define Debug(...)
 #endif
 
-class Slave {
+class Agent {
 public:
-  Slave(const char *name, const char* mac, XIOTModule* module);
-  ~Slave();
-  bool ping(); // ping this slave
-  bool reset(); // reset this slave
+  Agent(const char *name, const char* mac, XIOTModule* module);
+  ~Agent();
+  bool ping(); // ping this agent
+  bool reset(); // reset this agent
   void setName(const char*);
   const char* getName();
   void setIP(const char*);
@@ -56,8 +56,8 @@ public:
 protected:   
 
   XIOTModule* _module;
-  char _mac[MAC_ADDR_MAX_LENGTH + 1]; // for modules connected to a slave's AP, store 2 ips
-  char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a slave's AP, store 2 ips and separator
+  char _mac[MAC_ADDR_MAX_LENGTH + 1]; // for modules connected to a agent's AP, store 2 ips
+  char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a agent's AP, store 2 ips and separator
   char _name[NAME_MAX_LENGTH + 1];
   char _uiClassName[UI_CLASS_NAME_MAX_LENGTH + 1];
   bool _pong = false;  // Is true if last ping was successful

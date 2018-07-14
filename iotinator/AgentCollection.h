@@ -1,5 +1,5 @@
 /**
- *  Class handling Slave module registered in iotinator master 
+ *  Class handling Agent module registered in iotinator master
  *  Xavier Grosjean 2018
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
@@ -8,12 +8,12 @@
 #include <XIOTDisplay.h>
 #include <XIOTModule.h>
 #include <XUtils.h>
-#include "Slave.h"
+#include "Agent.h"
 #include <map>
 
-//#define DEBUG_SLAVE_COLLECTION // Uncomment this to enable debug messages over serial port
+//#define DEBUG_AGENT_COLLECTION // Uncomment this to enable debug messages over serial port
 
-#ifdef DEBUG_SLAVE_COLLECTION
+#ifdef DEBUG_AGENT_COLLECTION
 #define Debug(...) Serial.printf(__VA_ARGS__)
 #else
 #define Debug(...)
@@ -23,24 +23,24 @@
 #define LIST_BUFFER_SIZE 100
 
 // must not use char* as key
-typedef std::map <std::string, Slave*>  slaveMap;
-typedef std::pair <std::string, Slave*>  slavePair;
+typedef std::map <std::string, Agent*>  agentMap;
+typedef std::pair <std::string, Agent*>  agentPair;
 
-class SlaveCollection {
+class AgentCollection {
 public:
-  SlaveCollection(XIOTModule* module);
-  Slave* add(char* jsonStr);
-  Slave* refresh(char* jsonStr);
+  AgentCollection(XIOTModule* module);
+  Agent* add(char* jsonStr);
+  Agent* refresh(char* jsonStr);
   void remove(const char* mac);
-  void ping();  // ping every slave
-  void reset(); // reset every slave
+  void ping();  // ping every agent
+  void reset(); // reset every agent
   char *list();
   int getCount();
-  void renameOne(Slave *slave);
+  void renameOne(Agent *agent);
   bool nameAlreadyExists(const char* name, const char* mac);
 
 protected:
-  slaveMap _slaves;
+  agentMap _agents;
   XIOTModule* _module;
   int _listBufferSize;
   void _refreshListBufferSize();

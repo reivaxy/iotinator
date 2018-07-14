@@ -13,7 +13,7 @@
 #include <XIOTModule.h> 
 
 #include "masterConfig.h"
-#include "SlaveCollection.h"
+#include "AgentCollection.h"
 
 #include "initPageHtml.h"
 #include "appPageHtml.h"
@@ -51,8 +51,8 @@ time_t timeNow = 0;
 time_t timeLastTimeDisplay = 0;
 time_t timeLastWifiDisplay = 0;
 time_t timeLastPing = 0;
-SlaveCollection *slaveCollection;
-Slave* slaveToRename = NULL;
+AgentCollection *agentCollection;
+Agent* agentToRename = NULL;
 
 
 int scl = 12;
@@ -98,12 +98,12 @@ void setup() {
   module = new XIOTModule(oledDisplay);
   addEndpoints();
   
-  // Initialize the Slave Collection 
-  slaveCollection = new SlaveCollection(module);
+  // Initialize the Agent Collection
+  agentCollection = new AgentCollection(module);
   
   // After a reset, open Default Access Point
   // If Access Point was customized, we'll switch to it after one minute
-  // This is supposed to give slave modules time to initialize.
+  // This is supposed to give agent modules time to initialize.
   // Before checking for Home Wifi configuration, module is Wifi Access Point only
   WiFi.mode(WIFI_AP);
   initSoftAP();
@@ -152,7 +152,7 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
   oledDisplay->setLine(1, MSG_WIFI_STATION_DISCONNECTED, TRANSIENT, NOT_BLINKING);
-  // TODO: remove it from slave collection ? 
+  // TODO: remove it from agent collection ?
   // Disconnection needs a long time to be triggered (15mn ?)
   // May be periodic ping should be enough ?
 }
@@ -219,7 +219,7 @@ void addEndpoints() {
   });
 
   server->on("/api/list", HTTP_GET, [](){
-    char *moduleListStr = slaveCollection->list();
+    char *moduleListStr = agentCollection->list();
     module->sendJson(moduleListStr, 200);
     free(moduleListStr); 
 
@@ -230,7 +230,7 @@ void addEndpoints() {
   /**
    * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
    * NB: only 4 clients  can connect (TODO: to check!) 
-   * => may be slave modules could also create an access point and act as relay for
+   * => may be agent modules could also create an access point and act as relay for
    * other modules.
    **/
   server->on("/api/config", HTTP_GET, [](){
@@ -252,28 +252,28 @@ void addEndpoints() {
   });
 
   /**
-   * This endpoint allows slave modules to register themselves to master when they initialize
+   * This endpoint allows agent modules to register themselves to master when they initialize
    */
   server->on("/api/register", HTTP_POST, [](){
     char *jsonString;
     Serial.println("Registering module");
     // This will allocate jsonString
     XUtils::stringToCharP(server->arg("plain"), &jsonString);
-    // slaveCollection->add method need to copy the data since jsonString will be freed. 
+    // agentCollection->add method need to copy the data since jsonString will be freed.
     Serial.println(jsonString); 
-    Slave* slave = slaveCollection->add(jsonString);
+    Agent* agent = agentCollection->add(jsonString);
     free(jsonString);
-    if(slave == NULL) {
+    if(agent == NULL) {
       module->sendJson("{}", 500);
       oledDisplay->setLine(1, "Registration failed", TRANSIENT, NOT_BLINKING);
     } else {
       module->sendJson("{}", 200);
-      if(slave->getToRename()) {
-        slaveToRename = slave;
+      if(agent->getToRename()) {
+        agentToRename = agent;
       }
     }
     char message[100];
-    sprintf(message, "Registered modules: %d", slaveCollection->getCount());    
+    sprintf(message, "Registered modules: %d", agentCollection->getCount());
     oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
   });
 
@@ -286,18 +286,18 @@ void addEndpoints() {
 
   });
 
-  // This endpoint is used by modules when they want to update data in the slave collection
+  // This endpoint is used by modules when they want to update data in the agent collection
   // (which is the data that the UI is polling)
   server->on("/api/refresh", HTTP_POST, [](){
     char *jsonString;
     Serial.println("Refreshing module");
     // This will allocate jsonString
     XUtils::stringToCharP(server->arg("plain"), &jsonString);
-    // slaveCollection->add method need to copy the data since jsonString will be freed. 
+    // agentCollection->add method need to copy the data since jsonString will be freed.
     Serial.println(jsonString); 
-    Slave* slave = slaveCollection->refresh(jsonString);
+    Agent* agent = agentCollection->refresh(jsonString);
     free(jsonString);
-    if(slave == NULL) {
+    if(agent == NULL) {
       module->sendJson("{}", 500);
       oledDisplay->setLine(1, "Refreshing failed", TRANSIENT, NOT_BLINKING);
     } else {
@@ -309,7 +309,7 @@ void addEndpoints() {
   // reset may be only possible by SMS from admin number ?
   server->on("/api/swarmReset",  HTTP_GET, [](){
     Serial.println("Rq on /swarmReset");
-    slaveCollection->reset();
+    agentCollection->reset();
     config->initFromDefault();
     config->saveToEeprom();
     module->sendJson("{}", 200);
@@ -539,10 +539,10 @@ void loop() {
     initSoftAP();
   }
   
-  // check if any new added slave needs to be renamed
-  if(slaveToRename != NULL) {
-    slaveCollection->renameOne(slaveToRename);
-    slaveToRename = NULL;
+  // check if any new added agent needs to be renamed
+  if(agentToRename != NULL) {
+    agentCollection->renameOne(agentToRename);
+    agentToRename = NULL;
   }
   
   // Check if any request to serve
@@ -574,7 +574,7 @@ void loop() {
   // TODO: should modules give their ping periodicity ? probably, with min to 15" ?     
   if(timeNow - timeLastPing >= 30000) {
     timeLastPing = timeNow; 
-    slaveCollection->ping();
+    agentCollection->ping();
   } 
   
   // Things to do only once after connection to internet.

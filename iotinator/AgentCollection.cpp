@@ -1,22 +1,22 @@
 /**
- *  Class handling Slave module registered in iotinator master 
+ *  Class handling Agent module registered in iotinator master
  *  Xavier Grosjean 2018
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
 
-#include "SlaveCollection.h" 
+#include "AgentCollection.h"
 
-SlaveCollection::SlaveCollection(XIOTModule* module) {
+AgentCollection::AgentCollection(XIOTModule* module) {
   _module = module;
-  Debug("Slave count: %d\n", getCount());
+  Debug("Agent count: %d\n", getCount());
 }
 
-int SlaveCollection::getCount() {
-  return _slaves.size();
+int AgentCollection::getCount() {
+  return _agents.size();
 }
 
-Slave* SlaveCollection::refresh(char* jsonStr) {
-  Debug("SlaveCollection::refresh\n");
+Agent* AgentCollection::refresh(char* jsonStr) {
+  Debug("AgentCollection::refresh\n");
   StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; // registration is bigger than needed
   JsonObject& root = jsonBuffer.parseObject(jsonStr); 
   if (!root.success()) {
@@ -32,23 +32,23 @@ Slave* SlaveCollection::refresh(char* jsonStr) {
   _module->getDisplay()->setLine(1, "Refreshing", TRANSIENT, NOT_BLINKING);
   _module->getDisplay()->setLine(2, mac, TRANSIENT, NOT_BLINKING);
   
-  slaveMap::iterator it;
-  it = _slaves.find(mac);
-  if(it == _slaves.end()) {
+  agentMap::iterator it;
+  it = _agents.find(mac);
+  if(it == _agents.end()) {
     Serial.println("Refreshing: could not find module.");
     return NULL;
   }
-  Slave *slave = it->second;
-  _module->getDisplay()->setLine(2, slave->getName(), TRANSIENT, NOT_BLINKING);
-  slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
-  return slave; // ptr to slave in collection, safe to return.
+  Agent *agent = it->second;
+  _module->getDisplay()->setLine(2, agent->getName(), TRANSIENT, NOT_BLINKING);
+  agent->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  return agent; // ptr to agent in collection, safe to return.
 }
 
 /**
- * Register a new slave
+ * Register a new agent
  * data from jsonStr needs to be copied, since it will be freed
  */ 
-Slave* SlaveCollection::add(char* jsonStr) {
+Agent* AgentCollection::add(char* jsonStr) {
   StaticJsonBuffer<JSON_BUFFER_REGISTER_SIZE> jsonBuffer; 
   JsonObject& root = jsonBuffer.parseObject(jsonStr); 
   if (!root.success()) {
@@ -63,48 +63,48 @@ Slave* SlaveCollection::add(char* jsonStr) {
   if(!name || !mac || !ip) {
     return NULL;
   }
-  Debug("SlaveCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
+  Debug("AgentCollection::add name '%s', mac '%s', ip '%s'\n", name, mac, ip);
   _module->getDisplay()->setLine(1, "Registering", TRANSIENT, NOT_BLINKING);
   _module->getDisplay()->setLine(2, name, TRANSIENT, NOT_BLINKING);
-  Slave* slave = new Slave(name, mac, _module);
+  Agent* agent = new Agent(name, mac, _module);
   // Insert it.
-  std::pair <slaveMap::iterator, bool> slaveIt = _slaves.insert(slavePair(mac, slave));
+  std::pair <agentMap::iterator, bool> agentIt = _agents.insert(agentPair(mac, agent));
   // If not inserted because exists, point to the one already registered so that we can update it
-  if(!slaveIt.second) {
-    delete slave;
-    slave = slaveIt.first->second;
+  if(!agentIt.second) {
+    delete agent;
+    agent = agentIt.first->second;
   }
   // We need to update some fields...  
-  slave->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
-  slave->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
-  slave->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
-  slave->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
-  slave->setPingPeriod((int)root[XIOTModuleJsonTag::pingPeriod]);  // Will set it to 0 if absent
+  agent->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
+  agent->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  agent->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
+  agent->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
+  agent->setPingPeriod((int)root[XIOTModuleJsonTag::pingPeriod]);  // Will set it to 0 if absent
 
-  slave->setIP(ip);
+  agent->setIP(ip);
   
-  slave->setName(name); // in case it's a new name for an already registered module.
+  agent->setName(name); // in case it's a new name for an already registered module.
   // check if one OTHER (not same mac) already registered module already has this name
   if(nameAlreadyExists(name, mac)) {
     // Renaming will occur later, not within this request processing
-    slave->setToRename(true);
+    agent->setToRename(true);
   }  
   _refreshListBufferSize();
-  return slave;
+  return agent;
 }
 
 /**
  * Compute the buffer size to hold one attribute, its value and json syntax elements, for all registered modules
  **/
-int SlaveCollection::_jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) { 
+int AgentCollection::_jsonAttributeSize(int moduleCount, const char *attrName, int valueSize) {
   // size of the value of the attribute + size of its name + 2 double quotes + semi colon + coma 
   return moduleCount * (valueSize + strlen(attrName) + 2 + 1 + 1);
 }
 
 /**
- * Compute the buffer size to hold the json string listing all registered slave modules
+ * Compute the buffer size to hold the json string listing all registered agent modules
  **/
-void SlaveCollection::_refreshListBufferSize() {
+void AgentCollection::_refreshListBufferSize() {
   int moduleCount = getCount();
   _listBufferSize = LIST_BUFFER_SIZE;
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH);
@@ -116,38 +116,38 @@ void SlaveCollection::_refreshListBufferSize() {
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::heap, sizeof(uint32_t));
 }
 
-char* SlaveCollection::list() {
+char* AgentCollection::list() {
   int size = getCount();
-  Debug("SlaveCollection::list %d slaves\n", size);
+  Debug("AgentCollection::list %d agents\n", size);
   if(size == 0) {
     return strcpy((char*)malloc(3), "{}");  
   }
   
   // Size estimation: https://arduinojson.org/assistant/
-  // TODO: update this when necessary : max 10 fields per slave
+  // TODO: update this when necessary : max 10 fields per agent
   const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
   JsonObject& root = jsonBuffer.createObject();
   int customSize = 0;
   
-  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
-    JsonObject& slave = root.createNestedObject(it->second->getMAC());
-    slave[XIOTModuleJsonTag::name] = it->second->getName();
-    slave[XIOTModuleJsonTag::ip] = it->second->getIP();
-    slave[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
-    slave[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
-    slave[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
-    slave[XIOTModuleJsonTag::heap] = it->second->getHeap();
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
+    JsonObject& agent = root.createNestedObject(it->second->getMAC());
+    agent[XIOTModuleJsonTag::name] = it->second->getName();
+    agent[XIOTModuleJsonTag::ip] = it->second->getIP();
+    agent[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
+    agent[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
+    agent[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
+    agent[XIOTModuleJsonTag::heap] = it->second->getHeap();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
-      slave[XIOTModuleJsonTag::custom] = custom;
+      agent[XIOTModuleJsonTag::custom] = custom;
       customSize = strlen(custom);    
     }
     Debug("Name '%s' on mac '%s'\n", it->second->getName(), it->second->getMAC());
   }
   
-  // listBufferSize is updated when a slave registers
+  // listBufferSize is updated when a agent registers
   int strBufferSize = _listBufferSize + customSize;
   char* strBuffer = (char *)malloc(strBufferSize); 
   root.printTo(strBuffer, strBufferSize-1);
@@ -155,11 +155,11 @@ char* SlaveCollection::list() {
   return strBuffer;
 }
 
-void SlaveCollection::reset() {
+void AgentCollection::reset() {
   int size = getCount();
   const char *ip, *name; 
-  Serial.printf("SlaveCollection::reset %d slaves\n", size);
-  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
+  Serial.printf("AgentCollection::reset %d agents\n", size);
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
     ip = it->second->getIP();
     name = it->second->getName();
     Serial.printf("Reset module '%s' on ip '%s'\n", name, ip);
@@ -172,14 +172,14 @@ void SlaveCollection::reset() {
   }
 }
 
-void SlaveCollection::ping() {
+void AgentCollection::ping() {
   int size = getCount();
-  Debug("SlaveCollection::ping %d slaves\n", size);
+  Debug("AgentCollection::ping %d agents\n", size);
   bool canSleep;  // If true, must not be pinged
   const char *ip, *name;
   int pingPeriod;
   
-  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
     ip = it->second->getIP();
     name = it->second->getName();
     canSleep = (bool)it->second->getCanSleep();
@@ -202,15 +202,15 @@ void SlaveCollection::ping() {
 }
 
 
-void SlaveCollection::renameOne(Slave *slave) {
-  Debug("SlaveCollection::renameOne");
+void AgentCollection::renameOne(Agent *agent) {
+  Debug("AgentCollection::renameOne");
   int digit = 0;
   char alpha[NAME_MAX_LENGTH + 1];
   char newName[NAME_MAX_LENGTH + 1];
 
   bool ok = false;
   int i;
-  strcpy(alpha, slave->getName());
+  strcpy(alpha, agent->getName());
   char *withUnderscore = strtok(alpha, "_");
   if(withUnderscore != NULL) {
     char *digitPtr = strtok(NULL, "_");
@@ -222,14 +222,14 @@ void SlaveCollection::renameOne(Slave *slave) {
   while (!ok && strlen(newName) < NAME_MAX_LENGTH) {
     sprintf(newName, "%s_%d", alpha, ++digit);
     Debug("Testing name %s\n", newName);   
-    if(!nameAlreadyExists(newName, slave->getMAC())) {
+    if(!nameAlreadyExists(newName, agent->getMAC())) {
       ok = true;
     }   
   }
   if(!ok) {
     Serial.println("Can't find a non duplicated name");
   } else {
-    slave->renameTo(newName);
+    agent->renameTo(newName);
   }
   
 }
@@ -237,8 +237,8 @@ void SlaveCollection::renameOne(Slave *slave) {
 /**
  * check if a name exists in the collection on a different mac
  */
-bool SlaveCollection::nameAlreadyExists(const char* name, const char* mac) {
-  for (slaveMap::iterator it=_slaves.begin(); it!=_slaves.end(); ++it) {
+bool AgentCollection::nameAlreadyExists(const char* name, const char* mac) {
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
     if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getMAC(), mac) != 0))  {
       Debug("Found duplicate %s on ip %s\n", name, it->second->getIP()); // ip is easier for debugging since it's displayed on modules
       return true;
