@@ -42,7 +42,8 @@ var dimmerUIClass = {
     },
     events: {
       "mouseup #dimmerUIClassSliderSlider .slider-handle" : "level", 
-      "touchend #dimmerUIClassSliderSlider .slider-handle" : "level" 
+      "touchend #dimmerUIClassSliderSlider .slider-handle" : "level", 
+      "touchleave #dimmerUIClassSliderSlider .slider-handle" : "level" 
     },
     
     level: function(e) {
