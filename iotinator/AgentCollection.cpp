@@ -185,7 +185,7 @@ void AgentCollection::ping() {
     canSleep = (bool)it->second->getCanSleep();
     pingPeriod = (bool)it->second->getPingPeriod();
     if(!canSleep && pingPeriod > 0) {
-      Serial.printf("Ping module '%s' on ip '%s'\n", name, ip);
+      Serial.printf("Ping module '%s' on ip '%s' pingPeriod %d\n", name, ip, pingPeriod);
       bool result = it->second->ping();
       Serial.printf("Connected: %s\n", result?"true":"false");
       if(!result) {
