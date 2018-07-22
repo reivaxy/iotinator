@@ -12,7 +12,6 @@
 
 //#define DEBUG_AGENT // Uncomment this to enable debug messages over serial port
 
-#define DEFAULT_PING_PERIOD 60
 #define MIN_PING_PERIOD 30
 
 #ifdef DEBUG_AGENT
@@ -60,10 +59,10 @@ protected:
   char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a agent's AP, store 2 ips and separator
   char _name[NAME_MAX_LENGTH + 1];
   char _uiClassName[UI_CLASS_NAME_MAX_LENGTH + 1];
-  bool _pong = false;  // Is true if last ping was successful
+  bool _pong = true;  // New agent is created upon registration, so ping is true of course
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
-  int _pingPeriod = DEFAULT_PING_PERIOD; // default ping period is 60 seconds
+  int _pingPeriod = 0; // default ping period is "do not ping"
   time_t _lastPing = 0;
   uint32_t _heap = 0;
   char * _custom = NULL; // custom data sent by module at registration, dynamicall allocated
