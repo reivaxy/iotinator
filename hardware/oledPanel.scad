@@ -5,7 +5,7 @@ screenX = 28.5;
 screenY = 27.5;
 
 // Dimensions between holes axis
-xInterHole = 24.2;
+xInterHole = 23.7;
 yInterHole = 24.4;
 
 // Dimensions of the window in the panel
