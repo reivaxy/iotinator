@@ -17,7 +17,15 @@ yWindowoffset = 1.5;
 xHoleCenter = 0.1;
 yHoleCenter = 0;
 
+//rWindowPanel(45, 45, 2, 6);
 //windowPanel(45, 45, 2, 6);
+
+module rWindowPanel(x, y, z, yOffset) {
+  translate([y/2, x/2, 0])
+    rotate(90, [0, 0, 1])
+      translate([-x/2, -y/2, 0])
+        windowPanel(x, y, z, yOffset);
+}
 
 module windowPanel(x, y, z, yOffset) {
   xPanel = x;
@@ -52,7 +60,7 @@ module oledPanel(xPanel, yPanel, zPanel, yOffset) {
   }
 }
 
-// To fix the Oled
+// To hold the Oled screen
 module pillar(x, y, xMargin, yMargin, zPanel) {
   echo (x, y, xMargin, yMargin, zPanel);
   translate([x + xMargin/2, y + yMargin/2, zPanel]) {
