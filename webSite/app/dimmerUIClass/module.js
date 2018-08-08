@@ -34,6 +34,7 @@ var dimmerUIClass = {
       '<div class="dimmerUIClassContent">' +
         '<input class="dimmerUIClassSlider" data-slider-id="dimmerUIClassSliderSlider" type="text" data-slider-min="0" ' +
             'data-slider-max="100" data-slider-step="1" data-slider-value="<%- level %>" data-slider-tooltip="hide"/>' +
+        '<span class="levelText"><%= level %></span>' +
       '</div>'
 
     ),
@@ -50,14 +51,12 @@ var dimmerUIClass = {
     level: function(e) {
       let value = this.$el.find('.dimmerUIClassSlider')[0].value;
       console.log("Slider: ", value);
-      // Rebuilding the DOM is not only useless here, it sucks
-      // this.model.set('level', value);
-      this.model.attributes.level = value;
+      this.model.set('level', value);
       this.xiotSync(this.model);
     },
     render: function () {
       let that = this;
-      let slider = this.$el.find('.dimmerUIClassSlider').get(0);
+      let slider = this.$el.find('input.dimmerUIClassSlider').get(0);
       // first time the dom is built, need to add the slider
       if(slider == null) {
         this.$el.html(this.template(this.model.toJSON()));
@@ -76,7 +75,8 @@ var dimmerUIClass = {
           }, 100);
       } else {
         // If slider already exists, just update its value
-        this.$el.find('#dimmerUIClassSlider').slider({value: this.model.get('level')});
+        this.$el.find('input.dimmerUIClassSlider').slider({value: this.model.get('level')});
+        this.$el.find('.levelText').text( this.model.get('level'));
       }
     }
   })
