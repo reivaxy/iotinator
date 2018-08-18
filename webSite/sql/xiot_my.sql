@@ -15,18 +15,20 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `xiot_my` (
+  `userid` int(11) NOT NULL,
   `mac` varchar(20) NOT NULL,
   `name` varchar(30) NOT NULL,
   `gateway_ip` varchar(16) NOT NULL,
   `local_ip` varchar(16) NOT NULL,
-  `date` date NOT NULL
+  `date` datetime NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 --
 -- Indexes for table `my`
 --
 ALTER TABLE `xiot_my`
-  ADD PRIMARY KEY (`gateway_ip`);
+  ADD UNIQUE KEY `mac` (`mac`),
+  ADD KEY `gateway` (`gateway_ip`);
 COMMIT;
 
 ALTER TABLE `xiot_my` ADD UNIQUE `mac_gateway` (`mac`, `gateway_ip`);

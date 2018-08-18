@@ -1,0 +1,22 @@
+
+body {
+  
+}
+
+table {
+  width:100%;
+  border-collapse: collapse;
+}
+
+table, th, td {
+  border:1px solid #999;
+}
+
+td {
+  padding:2px;
+  font-size:0.9em;
+}
+
+span.error {
+  background-color: lightpink;
+}

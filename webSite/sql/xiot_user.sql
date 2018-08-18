@@ -22,7 +22,8 @@ CREATE TABLE `xiot_user` (
   `lastname` tinytext NOT NULL,
   `firstname` tinytext NOT NULL,
   `email` tinytext NOT NULL,
-  `lastUpdate` datetime NOT NULL,
+  `lastUpdated` datetime NOT NULL,
+  `created` datetime NOT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT '1'
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
