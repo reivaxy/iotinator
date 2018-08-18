@@ -32,6 +32,7 @@ Examples of modules are:
 - Monitoring for water leaks
 - Monitoring for fire/fumes
 - Monitoring an aquarium parameters to alert when something's off (https://github.com/reivaxy/aquaMonitor)
+- Controling various devices through their IR remote control port, replacing many remote controls with the advantage of working according to a programmed schedule, or remotely from home, which can be nice to set the heater or A/C on a little before coming home.
 - You name it !
 
 (*) ok, not many are available at this time, it's a work in progress. Hopefully some people join, design and share their own!
@@ -116,5 +117,11 @@ The UI is using Backbone and Bootstrap. A less than 1K page is served by the mas
 
 It's fast and light !
 
-The swith module is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
+The iotSwitch module (https://github.com/reivaxy/iotSwitch) is basic but some will be more complex soon (Most of it coming from my previous project https://github.com/reivaxy/aquaMonitor/blob/master/res/webApp.png)
+
+The iotFan (https://github.com/reivaxy/iotFan) module is merely a module that can control 4 switches, I used it in an old fan to remotely select its rotation speed.
+
+The iotDimmer (https://github.com/reivaxy/iotDimmer) module is a dimmer I use to control the light level in my living room. It can also be used to control the speed of a fan (will depend on the motor technology, though).
+
+
 
