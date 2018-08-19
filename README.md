@@ -65,7 +65,7 @@ It connects to a domestic Wifi network to get time through NTP servers (but it c
 Configuration is persisted in EEPROM, it uses network autodiscovery, (re)connection management is automatic.
 
 
-# Current Status (2018/05/27):
+# Current Status:
 
 Waiting to solve stability issues with cheap GSM boards, gsm handling has been disabled.
 
@@ -74,7 +74,7 @@ GSM will be an option, the framework being able to work just using internet.
 But GSM is nice in case of power outage (modules can have batteries, but my adsl box doesn't), and also to handle security
 (sending codes to validate authentication for instance)
 
-Current time is fetched from NTP servers once Home Wifi is configured and connected.
+Current time is fetched from NTP servers once Home Wifi is configured and connected. The master module registers to the parameterized website (default is http://www.iotinator.com, whose files are in the webSite directory), so that if your phone is connected to the same network, typing http://my.iotinator.com will redirect you to the webApp.
 
 The framework currently allows to create a new module in :
 * a few lines of CPP in which you implement your custom eeprom persisted settings and behaviors, including displaying custom info on the Oled screen.
@@ -88,7 +88,7 @@ For now the UI files (js, css) of each module are in the iotinator repository, w
 
 The UI framework is taking care of displaying one block for each module connected with their connection information and providing the module's generic and custom data, and each module needs to provide the UI elements to display/handle its custom data within these blocks, and send actions to the REST api.
 
-The UI part is not offering enough in terms of framework, and may change drastically. I'd like to investigate a vuejs version. Several UIs could easily be made available at the same time anyway.
+The UI part is not offering enough in terms of framework, and may change drastically. I'd like to investigate a vueJs or mobxJs version. Several UIs could easily be made available at the same time anyway.
 
 Most UI files (all but one) need to be hosted on a public web server, because of low capacity on ESP8266 both in terms of storage and performances. I don't want to bloat it with an SD card, it has better things to do.
 
