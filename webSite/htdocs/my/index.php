@@ -9,7 +9,7 @@ $modules = getList();
 // Otherwise display the list with links to each
 
 if(count($modules) == 1) {
-  $ip = $modules[0]["localeIp"];
+  $ip = $modules[0]["localIp"];
   header("Location: http://$ip");  
   return;
 }
@@ -42,7 +42,7 @@ if(count($modules) == 1) {
           for($i = 0; $i < $count; $i++) {
             $name = $modules[$i]["name"];
             $mac = $modules[$i]["mac"];
-            $localIp = htmlspecialchars($modules[$i]["localeIp"]);
+            $localIp = htmlspecialchars($modules[$i]["localIp"]);
             $date = $modules[$i]["date"];
             
             echo "<tr>";

@@ -21,7 +21,7 @@ function getList() {
   // Copy into an array to finish all DB related stuff before displaying the table.
   while($row = $stmt->fetch()) {
     array_push($modules, array("date" => $date, "mac" => $mac, "name" => $name,
-                 "localeIp" => $localIp));
+                 "localIp" => $localIp));
   
   }
   $stmt->free_result();
