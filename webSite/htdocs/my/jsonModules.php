@@ -1,5 +1,5 @@
 <?
-header("ContentType: application/json");
+header("Content-Type: application/json");
 require('../../includes/getModules.php');
 
 $modules = getList();
