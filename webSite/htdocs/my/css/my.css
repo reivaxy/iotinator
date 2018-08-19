@@ -1,4 +1,34 @@
 
+@font-face {
+  font-family: 'icomoon';
+  src:  url('../../app/css/fonts/icomoon.eot?qap3n1');
+  src:  url('../../app/css/fonts/icomoon.eot?qap3n1#iefix') format('embedded-opentype'),
+    url('../../app/css/fonts/icomoon.ttf?qap3n1') format('truetype'),
+    url('../../app/css/fonts/icomoon.woff?qap3n1') format('woff'),
+    url('../../app/css/fonts/icomoon.svg?qap3n1#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-bin:before {
+  content: "\e9ac";
+}
+
 body {
   
 }
@@ -15,6 +45,14 @@ table, th, td {
 td {
   padding:2px;
   font-size:0.9em;
+}
+
+td.bin, td.date, td.link {
+  text-align: center;
+}
+
+td.bin {
+  cursor: pointer;
 }
 
 span.error {
