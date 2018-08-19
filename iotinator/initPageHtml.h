@@ -23,8 +23,9 @@ body.noGsm .ifGsm {\
   <input name='apPwd' type='text' placeholder='" MSG_INIT_AP_PWD "'/><br/>\
   <input name='homeSsid' type='text' placeholder='" MSG_INIT_HOME_SSID "'/><br/>\
   <input name='homePwd' type='text' placeholder='" MSG_INIT_HOME_PWD "'/><br/>\
-  <input name='appHost' type='text' placeholder='" MSG_INIT_WEBAPP_HOST "'/><br/>\
   <input name='ntpHost' type='text' placeholder='" MSG_INIT_NTP_HOST "'/><br/>\
+  <input name='webSite' type='text' placeholder='" MSG_INIT_WEBSITE "'/><br/>\
+  <input name='apiKey' type='text' placeholder='" MSG_INIT_API_KEY "'/><br/>\
   <input type='submit'/>\
 </form>\
 </body>\

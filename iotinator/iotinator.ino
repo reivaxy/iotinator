@@ -187,13 +187,12 @@ void processNtpEvent() {
       Serial.println("NTP server not reachable");
     else if (ntpEvent == invalidAddress)
       Serial.println("Invalid NTP server address");
-    }
-  else {
+  } else {
     Serial.print("Got NTP time: ");
     Serial.println(NTP.getTimeDateString(NTP.getLastNTPSync()));
     ntpTimeInitialized = true;
     timeDisplay();
-      NTP.setInterval(7200, 7200);  // 5h retry, 2h refresh. once we have time, refresh failure is not critical
+    NTP.setInterval(7200, 7200);  // 5h retry, 2h refresh. once we have time, refresh failure is not critical
   }
 }
 void onSTADisconnected(WiFiEventStationModeDisconnected event) {
@@ -389,8 +388,8 @@ void printNumbers() {
 }
 
 void printAppPage() {
-  char *page = (char *)malloc(strlen(appPage) + strlen(config->getAppHost()) + 1);
-  sprintf(page, appPage, config->getAppHost());
+  char *page = (char *)malloc(strlen(appPage) + strlen(config->getWebSite()) + 1);
+  sprintf(page, appPage, config->getWebSite());
   module->sendHtml(page, 200);
   free(page);
 }
@@ -443,10 +442,16 @@ void printHomePage() {
         wifiDisplay();
       }
       // Read and save the web app server      
-      String appHost = server->arg("appHost");
-      if (appHost.length() > 0) {
+      String webSite = server->arg("webSite");
+      if (webSite.length() > 0) {
         // TODO: add checks
-        config->setAppHost(appHost);
+        config->setWebSite(webSite);
+      }
+      // Read and save the api key      
+      String apiKey = server->arg("apiKey");
+      if (apiKey.length() > 0) {
+        // TODO: add checks
+        config->setApiKey(apiKey);
       }
             
       // Read and save the ntp host      
@@ -516,13 +521,69 @@ void timeDisplay() {
   // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
   
   time_t millisec = millis();
-  if(ntpServerInitialized && millisec > config->getDefaultAPExposition()) {
+  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];
     sprintf(message, "%d", millisec/1000);
     oledDisplay->refreshDateTime(message);
     
+  }
+}
+
+void registerToWebsite() {
+  if(!checkApiKey()) return; 
+
+  const size_t bufferSize = JSON_OBJECT_SIZE(6); 
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+  JsonObject& root = jsonBuffer.createObject();  
+  root["name"] = config->getName();
+  root["apikey"] = config->getApiKey(); 
+  root["ip"] =  ipOnHomeSsid;
+  
+  char macAddrStr[100];
+  uint8_t macAddr[6];
+  WiFi.macAddress(macAddr);
+  sprintf(macAddrStr, "%02x:%02x:%02x:%02x:%02x:%02x", macAddr[0],macAddr[1],macAddr[2],macAddr[3],macAddr[4],macAddr[5]);
+  
+  root["mac"] = macAddrStr;
+  oledDisplay->setLine(1, "Registering to website", TRANSIENT, NOT_BLINKING);
+  char* response = (char *)malloc(201);
+  *response = 0;
+  char body[1001];
+  int httpCode;
+   
+  root.printTo(body, 1000);
+// TODO: investigate why this call does not work:    
+//  module->APIPost(config->getWebSite(), "/my/register.php", body, &httpCode, response, 200);
+
+  HTTPClient http;
+  char host[200];
+  sprintf(host, "%s/my/register.php", config->getWebSite());
+  http.begin(host);
+  httpCode = http.POST(body);
+  if(httpCode <= 0) {
+    Serial.printf("HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
+    return;
+  }
+
+  String jsonResultStr = http.getString();
+  http.end();
+  if(httpCode != 200) {
+    Serial.println("Registration failed");
+    Serial.println(jsonResultStr); // it's a json string, actually
+  } else {
+    Serial.println("Registered");
+  }
+}
+
+unsigned char checkApiKey() {
+  if(strlen(config->getApiKey()) == 0) {
+    Serial.println("No Api Key provided.");
+    return 0;
+  } else {
+    Serial.println("Api Key is defined.");
+    return 1;
   }
 }
 
@@ -622,6 +683,7 @@ void loop() {
   if(homeWifiFirstConnected) {
   // Init ntp   
     initNtp();
+    registerToWebsite();
     homeWifiFirstConnected = false;
   }
   delay(20);

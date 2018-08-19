@@ -10,11 +10,12 @@
 #include <XIOTConfig.h>
 #include <XUtils.h>
 
-#define CONFIG_VERSION 3
+#define CONFIG_VERSION 4
 #define MODULE_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
-#define DEFAULT_WEBAPP_HOST "http://www.iotinator.com/"
+#define API_KEY_MAX_LENGTH 40
+#define DEFAULT_WEBSITE "http://www.iotinator.com/"
 #define DEFAULT_NTP_SERVER "0.europe.pool.ntp.org"
 
 #define DEFAULT_STAT_PERIOD 1800000 // Half an hour. Should 0 be default ?
@@ -23,12 +24,15 @@
 #define DEFAULT_GMT_MIN_OFFSSET 0
 
 struct MasterConfigStruct:XEEPROMConfigDataStruct {
-  // First member (version number) is inherited from XEEPROMConfigDataStruct   
+  // First 2 members (version and type) are inherited from XEEPROMConfigDataStruct   
   char name[NAME_MAX_LENGTH + 1]; 
   // Array to store phone number information, permissions, ...
   phoneNumberDataType registeredNumbers[MAX_PHONE_NUMBERS];
   // Hostname for webapps, statistics, etc
-  char webAppHost[HOSTNAME_MAX_LENGTH + 1];
+  char webSite[HOSTNAME_MAX_LENGTH + 1];
+  
+  // API KEY from website registration, it's a uuid, 36 char
+  char apiKey[API_KEY_MAX_LENGTH + 1];
     
   // ntp server
   char ntpHostName[HOSTNAME_MAX_LENGTH + 1];
@@ -62,8 +66,10 @@ public:
   char* getName(void);
   void setName(const char*);   
   void setHomeSsid(const char* ssid);
-  void setAppHost(const char* appHost);
-  void setAppHost(String appHost);
+  void setWebSite(const char* webSite);
+  void setWebSite(String webSite);
+  void setApiKey(const char* apiKey);
+  void setApiKey(String apiKey);
   void setNtpServer(String ntpServer);
   void setNtpServer(const char *ntpServer);
   void setHomeSsid(String ssid);
@@ -74,7 +80,8 @@ public:
   void setApPwd(const char* pwd);
   void setApPwd(String pwd);
   char* getHomeSsid(void);
-  char* getAppHost(void);
+  char* getWebSite(void);
+  char* getApiKey(void);
   char* getNtpServer(void);
   char* getHomePwd(void);
   char* getApSsid(bool force=false);

@@ -28,8 +28,9 @@ void MasterConfigClass::initFromDefault() {
     _phoneNumbers[i]->reset();
   }
   MasterConfigStruct* configPtr = _getDataPtr();
-  XUtils::safeStringCopy(configPtr->webAppHost, DEFAULT_WEBAPP_HOST, HOSTNAME_MAX_LENGTH);
-  XUtils::safeStringCopy(configPtr->ntpHostName, DEFAULT_NTP_SERVER, HOSTNAME_MAX_LENGTH);
+  setWebSite(DEFAULT_WEBSITE);
+  setApiKey("");
+  setNtpServer(DEFAULT_NTP_SERVER);
   configPtr->statPeriod = DEFAULT_STAT_PERIOD;
   configPtr->homeSsid[0] = 0;
   configPtr->homePwd[0] = 0;
@@ -77,13 +78,21 @@ void MasterConfigClass::setHomePwd(String pwdString) {
 void MasterConfigClass::setApSsid(const char* ssid) {
   XUtils::safeStringCopy(_getDataPtr()->apSsid, ssid, SSID_MAX_LENGTH);
 }
-void MasterConfigClass::setAppHost(const char* appHost) {
-  XUtils::safeStringCopy(_getDataPtr()->webAppHost, appHost, HOSTNAME_MAX_LENGTH);
+void MasterConfigClass::setApiKey(const char* apiKey) {
+  XUtils::safeStringCopy(_getDataPtr()->apiKey, apiKey, API_KEY_MAX_LENGTH);
 }
-void MasterConfigClass::setAppHost(String appHostString) {
-  char appHost[HOSTNAME_MAX_LENGTH + 1];
-  appHostString.toCharArray(appHost, (unsigned int)HOSTNAME_MAX_LENGTH);
-  setAppHost(appHost);
+void MasterConfigClass::setApiKey(String apiKeyString) {
+  char apiKey[HOSTNAME_MAX_LENGTH + 1];
+  apiKeyString.toCharArray(apiKey, (unsigned int)API_KEY_MAX_LENGTH);
+  setApiKey(apiKey);
+}
+void MasterConfigClass::setWebSite(const char* webSite) {
+  XUtils::safeStringCopy(_getDataPtr()->webSite, webSite, HOSTNAME_MAX_LENGTH);
+}
+void MasterConfigClass::setWebSite(String webSiteString) {
+  char webSite[HOSTNAME_MAX_LENGTH + 1];
+  webSiteString.toCharArray(webSite, (unsigned int)HOSTNAME_MAX_LENGTH);
+  setWebSite(webSite);
 }
 void MasterConfigClass::setNtpServer(const char* ntpServer) {
   XUtils::safeStringCopy(_getDataPtr()->ntpHostName, ntpServer, HOSTNAME_MAX_LENGTH);
@@ -114,8 +123,12 @@ char* MasterConfigClass::getHomePwd(void) {
    return _getDataPtr()->homePwd;
 }
 
-char* MasterConfigClass::getAppHost(void) {
-   return _getDataPtr()->webAppHost;
+char* MasterConfigClass::getApiKey(void) {
+   return _getDataPtr()->apiKey;
+}
+
+char* MasterConfigClass::getWebSite(void) {
+   return _getDataPtr()->webSite;
 }
 
 char* MasterConfigClass::getNtpServer(void) {

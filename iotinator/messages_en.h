@@ -12,8 +12,9 @@
 #define MSG_INIT_AP_PWD "Access Point Password"
 #define MSG_INIT_HOME_SSID "Home Wifi SSID"
 #define MSG_INIT_HOME_PWD "Home Wifi Password"
-#define MSG_INIT_WEBAPP_HOST "Web App Host"
 #define MSG_INIT_NTP_HOST "Time server NTP Host"
+#define MSG_INIT_WEBSITE "Web site URL"
+#define MSG_INIT_API_KEY "Api Key from Web site registration"
 
 #define MSG_INIT_REQUEST "Please initialize"
 #define MSG_INIT_DONE "Init done"
