@@ -17,4 +17,12 @@ function connect() {
   return $mysqli;
 }
 
+function returnError($message) {
+  http_response_code(403);
+  $result = array();
+  $result["error"] = $message;
+  echo json_encode($result);
+  die();
+}
+
 ?>
