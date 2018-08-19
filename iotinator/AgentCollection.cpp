@@ -201,9 +201,21 @@ void AgentCollection::ping() {
   Serial.printf("Free heap mem: %d\n", freeMem);    
 }
 
+void AgentCollection::renameAgent(const char* agentIP, const char* newName) {
+  const char *ip, *name; 
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
+    ip = it->second->getIP();
+    if(strcmp(ip, agentIP) == 0) {
+      name = it->second->getName();
+      Serial.printf("Rename module on ip '%s' from %s to %s\n", ip, name, newName);
+      it->second->renameTo(newName);    
+      break;
+    }
+  }
+}
 
-void AgentCollection::renameOne(Agent *agent) {
-  Debug("AgentCollection::renameOne");
+void AgentCollection::autoRename(Agent *agent) {
+  Debug("AgentCollection::autoRename");
   int digit = 0;
   char alpha[NAME_MAX_LENGTH + 1];
   char newName[NAME_MAX_LENGTH + 1];

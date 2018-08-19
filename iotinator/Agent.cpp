@@ -141,7 +141,6 @@ void Agent::renameTo(const char* newName) {
   _module->APIPost(getIP(), "/api/rename", renameMsg, &httpCode);
   if(httpCode != 200) {
     _module->getDisplay()->setLine(1, "Renaming failed", TRANSIENT, NOT_BLINKING);
-    setName(newName);
   } else {
     sprintf(renameMsg, "Renamed %s", newName);
     _module->getDisplay()->setLine(1, renameMsg, TRANSIENT, NOT_BLINKING);

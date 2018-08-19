@@ -36,9 +36,10 @@ public:
   void reset(); // reset every agent
   char *list();
   int getCount();
-  void renameOne(Agent *agent);
+  void autoRename(Agent *agent);
   bool nameAlreadyExists(const char* name, const char* mac);
-
+  void renameAgent(const char* agentIp, const char* newName);
+  
 protected:
   agentMap _agents;
   XIOTModule* _module;

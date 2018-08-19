@@ -94,9 +94,11 @@ void setup() {
   oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
-  // Beware the module instantiation initializes the server
+  // TODO: this implemenation is crap. It uses some of the module features, but not others...
   module = new XIOTModule(oledDisplay);
+  // Master endpoints need to be set first (when same endpoints: only first one set is called)
   addEndpoints();
+  module->addModuleEndpoints();
   
   // Initialize the Agent Collection
   agentCollection = new AgentCollection(module);
@@ -227,6 +229,45 @@ void addEndpoints() {
     Serial.printf("Free heap mem: %d\n", freeMem);   
   });
   
+  // TODO: remove duplicated code with XIOTModule !!
+  server->on("/api/rename", HTTP_POST, [&]() {
+    char *forwardTo;
+    XUtils::stringToCharP(server->header("Xiot-forward-to"), &forwardTo);
+    String jsonBody = server->arg("plain");
+    char message[100];
+    
+    // I've seen a few unexplained parsing error so I have set a bigger buffer size...
+    const int bufferSize = 2* JSON_OBJECT_SIZE(2);
+    StaticJsonBuffer<bufferSize> jsonBuffer; 
+    JsonObject& root = jsonBuffer.parseObject(jsonBody); 
+    if (!root.success()) {
+      module->sendJson("{}", 500);
+      if(strlen(forwardTo) != 0) { 
+        oledDisplay->setLine(1, "Renaming agent failed", TRANSIENT, NOT_BLINKING);
+      } else {
+        oledDisplay->setLine(1, "Renaming master failed", TRANSIENT, NOT_BLINKING);
+      }
+      free(forwardTo);
+      return;
+    }
+    // Forward the rename to an agent
+    if(strlen(forwardTo) != 0) {     
+      agentCollection->renameAgent(forwardTo, (const char*)root["name"]);
+      free(forwardTo);
+    } else {
+      free(forwardTo);    
+      if(config == NULL) {
+        module->sendJson("{\"error\": \"No config to update.\"}", 404);
+        return;
+      }
+      sprintf(message, "Renaming master to %s\n", (const char*)root["name"] ); 
+      oledDisplay->setLine(1, message, TRANSIENT, NOT_BLINKING);
+      config->setName((const char*)root["name"]);
+      config->saveToEeprom(); // TODO: partial save !!   
+      oledDisplay->setTitle(config->getName());
+    }    
+    module->sendJson("{}", 200);   // HTTP code 200 is enough
+  });  
   /**
    * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
    * NB: only 4 clients  can connect (TODO: to check!) 
@@ -541,7 +582,7 @@ void loop() {
   
   // check if any new added agent needs to be renamed
   if(agentToRename != NULL) {
-    agentCollection->renameOne(agentToRename);
+    agentCollection->autoRename(agentToRename);
     agentToRename = NULL;
   }
   
