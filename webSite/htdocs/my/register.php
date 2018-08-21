@@ -10,26 +10,15 @@ $json = json_decode($payload, true);
 
 // ip to register
 $localIp = $json['ip'];
-if(!$localIp) {
-  returnError("Missing 'ip' parameter.");
-}
-
 // name of the module
 $name = $json['name'];
-if(!$name) {
-  returnError("Missing 'name' parameter.");
-}
-
 // mac address of the module
 $mac = $json['mac'];
-if(!$mac) {
-  returnError("Missing 'mac' parameter.");
-}
-
 // API KEY to check registration
 $apikey = $json['apikey'];
-if(!$apikey) {
-  returnError("Missing 'apikey' parameter.");
+
+if(!$localIp || !$name || !$mac || !$apikey) {
+  returnError("Bad payload.");
 }
 
 $mysqli = connect();
