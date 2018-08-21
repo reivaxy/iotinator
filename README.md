@@ -1,6 +1,19 @@
 # iotinator
-### The DIY multipurpose home iot solution.
 
+## The DIY multipurpose home iot solution.
+
+### Some use cases
+
+You come home, use your phone to turn on the light of the living room and adjust its brighness.
+
+You are about to come home, use your phone to remotely turn the heater on so that the appartment is comfy when you get there.
+
+You are on vacation, receive alerts if your aquarium temperature drops abnormally.
+
+... etc, etc.
+
+
+### Project description
 
 TL;DR: This is not just a framework or a library, it's an iot application you can already use. Please check the Wiki for a detailed walk-through introduction and many pictures: https://github.com/reivaxy/iotinator/wiki
 
