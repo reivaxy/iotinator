@@ -42,8 +42,7 @@ if(count($modules) == 1) {
 <?
     $count = count($modules);
     if($count == 0) {
-      echo "<span class=\"error\">No module found for ip $gatewayIp</span><br/>";          
-      echo '<span>Make sure you are connected to your local network.</span>';          
+      echo "<span class=\"error\">No iotinator master module found on your network.</span><br/>";          
     } else {
 ?>
     <table>
