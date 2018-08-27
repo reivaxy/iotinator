@@ -122,11 +122,11 @@ void AgentCollection::_refreshListBufferSize() {
 void AgentCollection::list(JsonObject& root, int* customSize) {
   int size = getCount();
   Debug("AgentCollection::list %d agents\n", size);
+  *customSize = _listBufferSize;
   if(size == 0) {
     return ;  
   }
   
-  *customSize = _listBufferSize;
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
     JsonObject& agent = root.createNestedObject(it->second->getMAC());
     agent[XIOTModuleJsonTag::name] = it->second->getName();

@@ -224,13 +224,16 @@ void addEndpoints() {
     int customStrSize = 0;
     
     // Size estimation: https://arduinojson.org/assistant/
-    // TODO: update this when necessary : 10 fields per agent
-    const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
+    // TODO: update this when necessary : 10 fields per agent (for now it's actually 8)
+    const size_t bufferSize = size*JSON_OBJECT_SIZE(10)
+                              + JSON_OBJECT_SIZE(size)
+                              +  + JSON_OBJECT_SIZE(1) ;
     
     DynamicJsonBuffer jsonBuffer(bufferSize);
     JsonObject& root = jsonBuffer.createObject();    
+    JsonObject& agentList = root.createNestedObject("agentList");
     
-    agentCollection->list(root, &customStrSize);
+    agentCollection->list(agentList, &customStrSize);
  
     char* strBuffer = (char *)malloc(customStrSize); 
     root.printTo(strBuffer, customStrSize-1);

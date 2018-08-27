@@ -43,7 +43,7 @@ public:
 protected:
   agentMap _agents;
   XIOTModule* _module;
-  int _listBufferSize;
+  int _listBufferSize = LIST_BUFFER_SIZE;
   void _refreshListBufferSize();
   int _jsonAttributeSize(int moduleCount, const char *attrName, int valueSize);  
 };

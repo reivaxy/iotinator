@@ -73,15 +73,18 @@ $(document).ready(function() {
   let url = document.location.href.split('/');
   url.pop();
   url = url.join('/') + "/api/list";
-  window.customData = {}; // data store for modules' data
   let cssJsLoaded = {};
   
   let moduleListModel = Backbone.Collection.extend({
     model: moduleModel,
     url: url,
     parse: function(data) {
-      // The list API returs a hash, transform it to array
+      // The list API returns a hash, transform it to array
       let result = [];
+      // Backward compatibility until GLA flashes his master with new version.
+      if('agentList' in data) {
+        data = data.agentList;
+      }
       for(let attr in data) {
         let item = data[attr];
         item.id = 'M' + attr.replace(/:/g, "_");
@@ -95,12 +98,6 @@ $(document).ready(function() {
           item.custom.id = item.id;
         }
         result.push(item);
-        
-        // try {
-        //   window.customData[item.id] = item.custom ? JSON.parse(item.custom) : {};
-        // } catch(e) {
-        //   // some modules may have no custom data. They are useless, I guess...
-        // }
         
         //The fist time we meet a new uiClassName Inject js and css for uiClassName ?
         // if(item.uiClassName && !cssJsLoaded[item.uiClassName]) {
