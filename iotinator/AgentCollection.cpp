@@ -80,6 +80,7 @@ Agent* AgentCollection::add(char* jsonStr) {
   agent->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
   agent->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
   agent->setPingPeriod((int)root[XIOTModuleJsonTag::pingPeriod]);  // Will set it to 0 if absent
+  agent->setLastPing(millis());
 
   agent->setIP(ip);
   
@@ -107,13 +108,15 @@ int AgentCollection::_jsonAttributeSize(int moduleCount, const char *attrName, i
 void AgentCollection::_refreshListBufferSize() {
   int moduleCount = getCount();
   _listBufferSize = LIST_BUFFER_SIZE;
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH);
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH);
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH);
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5);  // true or false
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pong, 5); // true or false
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::uiClassName, UI_CLASS_NAME_MAX_LENGTH);
-  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::heap, sizeof(uint32_t));
+  // Adding 2 for surrounding double quotes, and one for the comma.
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH + 3);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH + 3);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH + 3);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5 + 3);  // "true" or "false"
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::connected, 3 + 1); // 1, 0 or -1
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pingPeriod, 6 + 1);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::uiClassName, UI_CLASS_NAME_MAX_LENGTH + 3);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::heap, 6 + 1);
 }
 
 char* AgentCollection::list() {
@@ -124,7 +127,7 @@ char* AgentCollection::list() {
   }
   
   // Size estimation: https://arduinojson.org/assistant/
-  // TODO: update this when necessary : max 10 fields per agent
+  // TODO: update this when necessary : 10 fields per agent
   const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
   
   DynamicJsonBuffer jsonBuffer(bufferSize);
@@ -136,9 +139,10 @@ char* AgentCollection::list() {
     agent[XIOTModuleJsonTag::name] = it->second->getName();
     agent[XIOTModuleJsonTag::ip] = it->second->getIP();
     agent[XIOTModuleJsonTag::canSleep] = (bool)it->second->getCanSleep();
-    agent[XIOTModuleJsonTag::pong] = (bool)it->second->getPong();
+    agent[XIOTModuleJsonTag::connected] = (int8_t)it->second->getConnected();
     agent[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
     agent[XIOTModuleJsonTag::heap] = it->second->getHeap();
+    agent[XIOTModuleJsonTag::pingPeriod] = it->second->getPingPeriod();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       agent[XIOTModuleJsonTag::custom] = custom;
@@ -175,28 +179,11 @@ void AgentCollection::reset() {
 void AgentCollection::ping() {
   int size = getCount();
   Debug("AgentCollection::ping %d agents\n", size);
-  bool canSleep;  // If true, must not be pinged
-  const char *ip, *name;
-  int pingPeriod;
   
-  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
-    ip = it->second->getIP();
-    name = it->second->getName();
-    canSleep = (bool)it->second->getCanSleep();
-    pingPeriod = (bool)it->second->getPingPeriod();
-    if(!canSleep && pingPeriod > 0) {
-      Serial.printf("Ping module '%s' on ip '%s' pingPeriod %d\n", name, ip, pingPeriod);
-      bool result = it->second->ping();
-      Serial.printf("Connected: %s\n", result?"true":"false");
-      if(!result) {
-        char message[100];
-        sprintf(message, "Ping failed: %s", name);
-        _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING);      
-      }
-    } else {
-      Serial.printf("Not pinging module '%s' on ip '%s': canSleep: %d, pingPeriod: %d\n", name, ip, canSleep, pingPeriod);
-    }
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {  
+    it->second->ping();
   }
+  // Monitoring master heap size.
   uint32_t freeMem = system_get_free_heap_size();
   Serial.printf("Free heap mem: %d\n", freeMem);    
 }

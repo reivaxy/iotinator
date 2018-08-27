@@ -56,7 +56,7 @@ $(document).ready(function() {
         uiClassName: "",       // uiClassName of the module
         heap: 0,
         canSleep: false,
-        pong: false,
+        connected: 0,  // 0, 1 or -1: not pinged, ping ok, ping nok
         alert: false,
         alertMsg: "",
         custom: {}
@@ -122,7 +122,7 @@ $(document).ready(function() {
   <div class="name"><%- name %><div class="commands"><span class="icon icon-cog"/><span class="icon icon-loop2"/><span class="icon icon-floppy-disk"/></div></div>\
   <div class="moduleContent" id="content_<%- id %>"></div>\
   <hr/>\
-  <div class="footer pong <%- pong %>"></div>\
+  <div class="footer connected c<%-connected%>"></div>\
   <div class="footer localIP"><%- ip %></div>\
 </div>'),
     initialize: function () {
@@ -186,8 +186,9 @@ $(document).ready(function() {
           setTimeout(fetch, 11000);
           //debugger;
         },
-        complete: function() {
+        complete: function(data) {
           $('body').removeClass('fetching');
+          debugger;
           setTimeout(fetch, 11000);
         }
       });

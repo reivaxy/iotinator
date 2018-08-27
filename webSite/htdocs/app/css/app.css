@@ -126,10 +126,10 @@ span.icon.icon-smile {
   display: block;
 }
 
-.footer.pong {
+.footer.connected {
   float:right;
 }
-.footer.pong.false {
+.footer.connected.c-1 {
   background-color: red;
 }
 

@@ -49,8 +49,8 @@ const char* Agent::getUiClassName() {
   return _uiClassName;
 }
 
-bool Agent::getPong() {
-  return _pong;
+int8_t Agent::getConnected() {
+  return _connected;
 }
 
 void Agent::setToRename(bool flag) {
@@ -85,13 +85,15 @@ void Agent::setPingPeriod(int pingPeriod) {
   // If value too small, keep default (legacy: when absent, value is 0)
   if(pingPeriod >= MIN_PING_PERIOD ) {
     _pingPeriod = pingPeriod;
+  } else {
+    _pingPeriod = 0;
   }
 }
-int Agent::getLastPing() {
+time_t Agent::getLastPing() {
   return _lastPing;
 }
 
-void Agent::setLastPing(int timestamp) {
+void Agent::setLastPing(time_t timestamp) {
   _lastPing = timestamp;
 }
 
@@ -149,15 +151,33 @@ void Agent::renameTo(const char* newName) {
   }  
 }
 
-bool Agent::ping() {
+// Returns 0 if module was not pinged due to ping period or canSleep flag
+// Returns 1 if ping was successfull
+// Returns -1 if ping failed
+int8_t Agent::ping() {
   Debug("Agent::ping\n");
   int httpCode;
-  _pong = false;
+  _connected = 0;
+
+  time_t now = millis();
+  bool elapsed = false;
+  if(_pingPeriod > 0) {
+    elapsed = (now >= (_lastPing + (_pingPeriod*1000)));
+  }
+  if(_canSleep || !elapsed) {
+    Serial.printf("Not pinging module '%s' on ip '%s': canSleep: %d, pingPeriod: %d\n", _name, _ip, _canSleep, _pingPeriod);
+    return 0;    
+  }
+  _lastPing = now; 
+  
+  Serial.printf("Ping module '%s' on ip '%s' pingPeriod %d\n", _name, _ip, _pingPeriod);
+  
   int resultSize = 100 + MAX_CUSTOM_DATA_SIZE; 
   char resultPayload[resultSize];
-  _module->APIGet(getIP(), "/api/ping", &httpCode, resultPayload, resultSize);  
-  _pong = (httpCode == 200);
-  if(_pong) {
+  _module->APIGet(_ip, "/api/ping", &httpCode, resultPayload, resultSize);
+
+  if(httpCode == 200) {
+    _connected = 1;
     const int bufferSize = JSON_OBJECT_SIZE(2);  // At most 2 fields in one object
     StaticJsonBuffer<bufferSize> jsonBuffer;
     JsonObject& root = jsonBuffer.parseObject(resultPayload);
@@ -166,8 +186,15 @@ bool Agent::ping() {
     setHeap(heap);
     Debug("Custom: %s\n", (const char *)root[XIOTModuleJsonTag::custom]);
     setCustom(root[XIOTModuleJsonTag::custom]);  
+  } else {
+    _connected = -1;
+    char message[100];
+    sprintf(message, "Ping failed: %s", _name);
+    _module->getDisplay()->setLine(1, message, TRANSIENT, NOT_BLINKING); 
   }
-  return _pong;
+  
+  Serial.printf("Connected: %s\n", _connected == 1?"true":"false");
+  return _connected;
 }
 
 bool Agent::reset() {

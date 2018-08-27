@@ -1,8 +1,8 @@
 
-.footer.pong.true::before {
+.footer.connected.c1::before {
   content: "Connected";
 }
 
-.footer.pong.false::before {
+.footer.connected.c-1::before {
   content: "Disconnected";
 }

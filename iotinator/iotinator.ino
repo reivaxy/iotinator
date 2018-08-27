@@ -225,7 +225,7 @@ void addEndpoints() {
     free(moduleListStr); 
 
     uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("Free heap mem: %d\n", freeMem);   
+    Serial.printf("%s Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
   });
   
   // TODO: remove duplicated code with XIOTModule !!
@@ -671,10 +671,8 @@ void loop() {
     // refresh wifi display every Xs to display both ssid/ips alternatively
     wifiDisplay();    
   }
-  
-  // TODO: ping every ? minute only 
-  // TODO: should modules give their ping periodicity ? probably, with min to 15" ?     
-  if(timeNow - timeLastPing >= 30000) {
+      
+  if(timeNow - timeLastPing >= MIN_PING_PERIOD*1000) {
     timeLastPing = timeNow; 
     agentCollection->ping();
   } 

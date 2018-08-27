@@ -24,7 +24,7 @@ class Agent {
 public:
   Agent(const char *name, const char* mac, XIOTModule* module);
   ~Agent();
-  bool ping(); // ping this agent
+  int8_t ping(); // ping this agent
   bool reset(); // reset this agent
   void setName(const char*);
   const char* getName();
@@ -33,7 +33,7 @@ public:
   void setUiClassName(const char*);
   const char* getUiClassName();
   const char* getMAC();
-  bool getPong();
+  int8_t getConnected();
   void setToRename(bool flag);
   bool getToRename();
   void setHeap(uint32_t heap);
@@ -46,8 +46,8 @@ public:
   void setCanSleep(bool);
   int getPingPeriod();
   void setPingPeriod(int);
-  int getLastPing();
-  void setLastPing(int);
+  time_t getLastPing();
+  void setLastPing(time_t);
   void setCustom(const char*);
   const char* getCustom();
   void renameTo(const char* newName);
@@ -59,7 +59,7 @@ protected:
   char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a agent's AP, store 2 ips and separator
   char _name[NAME_MAX_LENGTH + 1];
   char _uiClassName[UI_CLASS_NAME_MAX_LENGTH + 1];
-  bool _pong = true;  // New agent is created upon registration, so ping is true of course
+  int8_t _connected = 1;  // New agent is created upon registration, so ping is true of course
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 
   int _pingPeriod = 0; // default ping period is "do not ping"
