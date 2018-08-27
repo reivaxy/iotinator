@@ -119,21 +119,14 @@ void AgentCollection::_refreshListBufferSize() {
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::heap, 6 + 1);
 }
 
-char* AgentCollection::list() {
+void AgentCollection::list(JsonObject& root, int* customSize) {
   int size = getCount();
   Debug("AgentCollection::list %d agents\n", size);
   if(size == 0) {
-    return strcpy((char*)malloc(3), "{}");  
+    return ;  
   }
   
-  // Size estimation: https://arduinojson.org/assistant/
-  // TODO: update this when necessary : 10 fields per agent
-  const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
-  
-  DynamicJsonBuffer jsonBuffer(bufferSize);
-  JsonObject& root = jsonBuffer.createObject();
-  int customSize = 0;
-  
+  *customSize = _listBufferSize;
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
     JsonObject& agent = root.createNestedObject(it->second->getMAC());
     agent[XIOTModuleJsonTag::name] = it->second->getName();
@@ -146,17 +139,10 @@ char* AgentCollection::list() {
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       agent[XIOTModuleJsonTag::custom] = custom;
-      customSize = strlen(custom);    
+      *customSize += strlen(custom);    
     }
     Debug("Name '%s' on mac '%s'\n", it->second->getName(), it->second->getMAC());
   }
-  
-  // listBufferSize is updated when a agent registers
-  int strBufferSize = _listBufferSize + customSize;
-  char* strBuffer = (char *)malloc(strBufferSize); 
-  root.printTo(strBuffer, strBufferSize-1);
-  Debug("Reserved size: %d, actual size: %d\n", strBufferSize, strlen(strBuffer));
-  return strBuffer;
 }
 
 void AgentCollection::reset() {

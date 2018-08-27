@@ -220,9 +220,23 @@ void addEndpoints() {
   });
 
   server->on("/api/list", HTTP_GET, [](){
-    char *moduleListStr = agentCollection->list();
-    module->sendJson(moduleListStr, 200);
-    free(moduleListStr); 
+    int size = agentCollection->getCount();
+    int customStrSize = 0;
+    
+    // Size estimation: https://arduinojson.org/assistant/
+    // TODO: update this when necessary : 10 fields per agent
+    const size_t bufferSize = size*JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(size);
+    
+    DynamicJsonBuffer jsonBuffer(bufferSize);
+    JsonObject& root = jsonBuffer.createObject();    
+    
+    agentCollection->list(root, &customStrSize);
+ 
+    char* strBuffer = (char *)malloc(customStrSize); 
+    root.printTo(strBuffer, customStrSize-1);
+    Serial.printf("Reserved size: %d, actual size: %d\n", customStrSize, strlen(strBuffer));
+    module->sendJson(strBuffer, 200);
+    free(strBuffer); 
 
     uint32_t freeMem = system_get_free_heap_size();
     Serial.printf("%s After /api/list Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   

@@ -34,7 +34,7 @@ public:
   void remove(const char* mac);
   void ping();  // ping every agent
   void reset(); // reset every agent
-  char *list();
+  void list(JsonObject& root, int* customSize);
   int getCount();
   void autoRename(Agent *agent);
   bool nameAlreadyExists(const char* name, const char* mac);
