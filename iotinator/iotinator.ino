@@ -225,7 +225,7 @@ void addEndpoints() {
     free(moduleListStr); 
 
     uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("%s Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
+    Serial.printf("%s Post /api/list Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
   });
   
   // TODO: remove duplicated code with XIOTModule !!

@@ -157,14 +157,18 @@ void Agent::renameTo(const char* newName) {
 int8_t Agent::ping() {
   Debug("Agent::ping\n");
   int httpCode;
-  _connected = 0;
 
   time_t now = millis();
   bool elapsed = false;
   if(_pingPeriod > 0) {
     elapsed = (now >= (_lastPing + (_pingPeriod*1000)));
+  } else {
+    _connected = 0;  // do not ping : can't tell if connected or not.
   }
   if(_canSleep || !elapsed) {
+    if(_canSleep) {
+      _connected = 0;
+    }
     Serial.printf("Not pinging module '%s' on ip '%s': canSleep: %d, pingPeriod: %d\n", _name, _ip, _canSleep, _pingPeriod);
     return 0;    
   }
