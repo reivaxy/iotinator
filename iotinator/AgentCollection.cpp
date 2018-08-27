@@ -182,10 +182,7 @@ void AgentCollection::ping() {
   
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {  
     it->second->ping();
-  }
-  // Monitoring master heap size.
-  uint32_t freeMem = system_get_free_heap_size();
-  Serial.printf("Post Ping Free heap mem: %d\n", freeMem);    
+  }  
 }
 
 void AgentCollection::renameAgent(const char* agentIP, const char* newName) {

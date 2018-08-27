@@ -225,7 +225,7 @@ void addEndpoints() {
     free(moduleListStr); 
 
     uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("%s Post /api/list Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
+    Serial.printf("%s After /api/list Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
   });
   
   // TODO: remove duplicated code with XIOTModule !!
@@ -675,6 +675,8 @@ void loop() {
   if(timeNow - timeLastPing >= MIN_PING_PERIOD*1000) {
     timeLastPing = timeNow; 
     agentCollection->ping();
+    uint32_t freeMem = system_get_free_heap_size();
+    Serial.printf("%s After ping Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);  
   } 
   
   // Things to do only once after connection to internet.
