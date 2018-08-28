@@ -387,7 +387,7 @@ void addEndpoints() {
       Serial.print("Forwarding ota to ");
       Serial.println(forwardTo);
       char message[SSID_MAX_LENGTH + PWD_MAX_LENGTH + 40];
-      sprintf(message, "{\"ssid\":\"%s\",\"pwd\":\"%s\"}", config->getHomeSsid(), config->getHomePwd());
+      sprintf(message, "{\"%s\":\"%s\",\"%s\":\"%s\"}", XIOTModuleJsonTag::ssid, config->getHomeSsid(), XIOTModuleJsonTag::pwd, config->getHomePwd());
       module->APIPost(forwardTo, "/api/ota", message, &httpCode, NULL, 0);
     } else {
       char message[30];
