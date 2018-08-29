@@ -1,1 +1,34 @@
-{"60:01:94:0c:31:14":{"name":"Fan","ip":"192.168.4.2","canSleep":false,"pong":true,"uiClassName":"fanUIClass","heap":38792,"custom":"{\"speed\":\"2\", \"osc\":\"off\"}"},"84:f3:eb:96:82:aa":{"name":"Switch_1","ip":"192.168.4.3","canSleep":false,"pong":true,"uiClassName":"switchUIClass","heap":39008,"custom":"{\"status\":\"on\"}"}}
+{
+    "agentList": {
+        "5c:cf:7f:24:7a:ef": {
+            "name": "Dimmer_1",
+            "ip": "192.168.4.2",
+            "canSleep": false,
+            "connected": 0,
+            "uiClassName": "dimmerUIClass",
+            "heap": 38664,
+            "pingPeriod": 0,
+            "custom": "{\"level\":23}"
+        },
+        "60:01:94:06:80:51": {
+            "name": "Fan",
+            "ip": "192.168.4.4",
+            "canSleep": false,
+            "connected": 0,
+            "uiClassName": "fanUIClass",
+            "heap": 39136,
+            "pingPeriod": 0,
+            "custom": "{\"speed\":0, \"osc\":\"off\"}"
+        },
+        "84:f3:eb:96:82:aa": {
+            "name": "Lampe Coin",
+            "ip": "192.168.4.3",
+            "canSleep": false,
+            "connected": 0,
+            "uiClassName": "switchUIClass",
+            "heap": 39736,
+            "pingPeriod": 0,
+            "custom": "{\"status\":\"off\"}"
+        }
+    }
+}
