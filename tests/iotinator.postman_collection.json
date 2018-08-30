@@ -1,373 +1,367 @@
 {
-	"id": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-	"name": "iotinator",
-	"description": "",
-	"order": [
-		"0303cb54-c019-2bd8-5ba8-dce74f1d205c",
-		"51d717f0-4573-4c10-c108-472c6dc61410",
-		"68fb9ac7-4aac-7b21-dd2e-2525e9995d43",
-		"28eab861-f764-1d28-2b07-0590b908ec3e",
-		"b3e4df72-f894-5598-34e2-cfb73cfaa1a6",
-		"e406db1c-9547-cc40-b5fe-0cdef8060f60",
-		"e570f362-8dda-cc67-4991-7aab7b534116",
-		"4bdf263d-b633-d4c5-4889-00d06d55867e",
-		"6d20a6bd-a9cb-2034-3705-bb141a9194a1",
-		"81e01349-6882-11e3-923e-dbd4839a8e0f",
-		"a6ec229a-fefc-d4f7-e2a3-b6092d811fb9",
-		"c3bf50c3-9f8b-8410-bd12-fe3e8c5d8b38",
-		"9401ece7-7a7e-2eaf-23c5-f756a41b7472"
-	],
-	"folders": [],
-	"folders_order": [],
-	"timestamp": 1526631955969,
-	"owner": 0,
-	"public": false,
-	"requests": [
+	"variables": [],
+	"info": {
+		"name": "iotinator",
+		"_postman_id": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
 		{
-			"id": "0303cb54-c019-2bd8-5ba8-dce74f1d205c",
-			"headers": "",
-			"headerData": [],
-			"url": "iotinator.com/my/jsonModules.php",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": "var jsonData = JSON.parse(responseBody);\n\npostman.setGlobalVariable(\"iotinatorMasterIP\", jsonData[0].localIp);",
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534678642290,
 			"name": "Find Master",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "28eab861-f764-1d28-2b07-0590b908ec3e",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotinatorMasterIP}}/api/register",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740992529,
-			"name": "register Agent",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"Dimmer_1\",\"ip\":\"192.168.4.9\", MAC:\"60:01:94:0c:31:14\",\"uiClassName\":\"dimmerUIClass\", \"canSleep\": false}\"}\r"
-		},
-		{
-			"id": "4bdf263d-b633-d4c5-4889-00d06d55867e",
-			"headers": "Xiot-forward-to: {{iotSwitchIp}}\n",
-			"headerData": [
+			"event": [
 				{
-					"key": "Xiot-forward-to",
-					"value": "{{iotSwitchIp}}",
-					"enabled": true
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"",
+							"postman.setGlobalVariable(\"iotinatorMasterIP\", jsonData[0].localIp);"
+						]
+					}
 				}
 			],
-			"url": "{{iotinatorMasterIP}}/api/data",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740779733,
-			"name": "switch off",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"status\": \"off\"}"
+			"request": {
+				"url": "iotinator.com/my/jsonModules.php",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
 		},
 		{
-			"id": "51d717f0-4573-4c10-c108-472c6dc61410",
-			"headers": "Content-Type: application/x-www-form-urlencoded\n",
-			"headerData": [
-				{
-					"key": "Content-Type",
-					"value": "application/x-www-form-urlencoded",
-					"description": "",
-					"enabled": true
-				}
-			],
-			"url": "iotinator.com/my/register.php",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534705260646,
 			"name": "register Master to website",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\n\"mac\":\"5c:cf:7f:16:dd:10\",\n\"apikey\":\"{{API_KEY}}\",\n\"ip\":\"192.168.0.33\",\n\"name\":\"tutu\"\n}"
+			"request": {
+				"url": "iotinator.com/my/register.php",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"mac\":\"5c:cf:7f:16:dd:10\",\n\"apikey\":\"{{API_KEY}}\",\n\"ip\":\"192.168.0.33\",\n\"name\":\"tutu\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
 		},
 		{
-			"id": "68fb9ac7-4aac-7b21-dd2e-2525e9995d43",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotinatorMasterIP}}/api/list",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": "var jsonData = JSON.parse(responseBody);\n\npostman.setGlobalVariable(\"iotSwitchIp\", \"\");\npostman.setGlobalVariable(\"iotFanIp\", \"\");\npostman.setGlobalVariable(\"iotDimmerIp\", \"\");\n\nfor(var i in jsonData) {\n    var agent = jsonData[i];\n    console.log(agent.uiClassName);\n    switch(agent.uiClassName) {\n        case 'fanUIClass':\n            postman.setGlobalVariable(\"iotFanIp\", agent.ip);\n            break;\n        case 'dimmerUIClass':\n            postman.setGlobalVariable(\"iotDimmerIp\", agent.ip);\n            break;\n        case 'switchUIClass':\n            postman.setGlobalVariable(\"iotSwitchIp\", agent.ip);\n            break;            \n    }\n}\n",
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740535471,
 			"name": "Module List",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "6d20a6bd-a9cb-2034-3705-bb141a9194a1",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotinatorMasterIP}}/api/config",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534678782417,
-			"name": "config",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "81e01349-6882-11e3-923e-dbd4839a8e0f",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotinatorMasterIP}}/api/data",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740798330,
-			"name": "data",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "9401ece7-7a7e-2eaf-23c5-f756a41b7472",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotSwitchIp}}/api/data",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740949656,
-			"name": "get Switch data",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "a6ec229a-fefc-d4f7-e2a3-b6092d811fb9",
-			"headers": "",
-			"headerData": [],
-			"url": "{{iotinatorMasterIP}}/api/ping",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534679077490,
-			"name": "ping",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "b3e4df72-f894-5598-34e2-cfb73cfaa1a6",
-			"headers": "Xiot-forward-to: 192.168.4.3\n",
-			"headerData": [
+			"event": [
 				{
-					"key": "Xiot-forward-to",
-					"value": "192.168.4.3",
-					"description": "",
-					"enabled": true
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"",
+							"postman.setGlobalVariable(\"iotSwitchIp\", \"\");",
+							"postman.setGlobalVariable(\"iotFanIp\", \"\");",
+							"postman.setGlobalVariable(\"iotDimmerIp\", \"\");",
+							"",
+							"for(var i in jsonData.agentList) {",
+							"    var agent = jsonData.agentList[i];",
+							"    console.log(agent.uiClassName);",
+							"    switch(agent.uiClassName) {",
+							"        case 'fanUIClass':",
+							"            postman.setGlobalVariable(\"iotFanIp\", agent.ip);",
+							"            break;",
+							"        case 'dimmerUIClass':",
+							"            postman.setGlobalVariable(\"iotDimmerIp\", agent.ip);",
+							"            break;",
+							"        case 'switchUIClass':",
+							"            postman.setGlobalVariable(\"iotSwitchIp\", agent.ip);",
+							"            break;            ",
+							"    }",
+							"}",
+							""
+						]
+					}
 				}
 			],
-			"url": "{{iotinatorMasterIP}}/api/data",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534678890391,
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/list",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "start OTA",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/ota",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.4.4",
+						"description": "",
+						"disabled": true
+					},
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.244.100",
+						"description": "",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "register Dimmer",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/register",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\nMAC:\"5c:cf:7f:1c:58:2b\",\n        \"name\": \"Lampe1\",\n        \"ip\": \"192.168.4.4\",\n        \"canSleep\": false,\n        \"pong\": true,\n        \"uiClassName\": \"dimmerUIClass\",\n        \"heap\": 39184,\n        \"custom\":\"{\\\"level\\\":50}\",\n        \"pingPeriod\": 180\n    }"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "register Dimmer copy",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/register",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Dimmer\",\"ip\":\"192.168.4.4\",\"MAC\":\"5c:cf:7f:1c:58:2b\",\"uiClassName\":\"dimmerUIClass\",\"heap\":38856,\"canSleep\":false,\"custom\":\"{\\\"level\\\":48}\", \"pingPeriod\": 30}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "register Switch",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/register",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Lampe Coin\",\"ip\":\"192.168.4.2\",\"MAC\":\"84:f3:eb:96:82:aa\",\"uiClassName\":\"switchUIClass\",\"heap\":39768,\"canSleep\":false, \"pingPeriod\":180, \"custom\":\"{\\\"status\\\":\\\"off\\\"}\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "register Fan",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/register",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Fan\",\"ip\":\"192.168.4.3\",\"MAC\":\"60:01:94:06:80:51\",\"uiClassName\":\"fanUIClass\",\"heap\":39136,\"canSleep\":false,\"custom\":\"{\\\"speed\\\":0, \\\"osc\\\":\\\"off\\\"}\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
 			"name": "send data",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"level\":53}\r"
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/data",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.4.3",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"level\":53}\r"
+				},
+				"description": ""
+			},
+			"response": []
 		},
 		{
-			"id": "c3bf50c3-9f8b-8410-bd12-fe3e8c5d8b38",
-			"headers": "Xiot-forward-to: 192.168.4.2\n",
-			"headerData": [
-				{
-					"key": "Xiot-forward-to",
-					"value": "192.168.4.2",
-					"description": "",
-					"enabled": true
-				}
-			],
-			"url": "{{iotinatorMasterIP}}/api/restart",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "GET",
-			"data": [],
-			"dataMode": "raw",
-			"version": 2,
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534678883592,
-			"name": "restart",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
-		},
-		{
-			"id": "e406db1c-9547-cc40-b5fe-0cdef8060f60",
-			"headers": "Xiot-forward-to: {{iotSwitchIp}}\n//Xiot-forward-to: {{iotDimmerIp}}\n//Xiot-forward-to: {{iotFanIp}}\n",
-			"headerData": [
-				{
-					"key": "Xiot-forward-to",
-					"value": "{{iotSwitchIp}}",
-					"description": "",
-					"enabled": true
-				},
-				{
-					"key": "Xiot-forward-to",
-					"value": "{{iotDimmerIp}}",
-					"description": "",
-					"enabled": false
-				},
-				{
-					"key": "Xiot-forward-to",
-					"value": "{{iotFanIp}}",
-					"description": "",
-					"enabled": false
-				}
-			],
-			"url": "{{iotinatorMasterIP}}/api/rename",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740848304,
 			"name": "rename",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"name\":\"Test Module\"}\r"
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/rename",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "{{iotSwitchIp}}",
+						"description": "",
+						"disabled": true
+					},
+					{
+						"key": "Xiot-forward-to",
+						"value": "{{iotDimmerIp}}",
+						"description": ""
+					},
+					{
+						"key": "Xiot-forward-to",
+						"value": "{{iotFanIp}}",
+						"description": "",
+						"disabled": true
+					},
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.4.4",
+						"description": "",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Lampe\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
 		},
 		{
-			"id": "e570f362-8dda-cc67-4991-7aab7b534116",
-			"headers": "Xiot-forward-to: {{iotSwitchIp}}\n",
-			"headerData": [
-				{
-					"key": "Xiot-forward-to",
-					"value": "{{iotSwitchIp}}",
-					"description": "",
-					"enabled": true
-				}
-			],
-			"url": "{{iotinatorMasterIP}}/api/data",
-			"queryParams": [],
-			"preRequestScript": null,
-			"pathVariables": {},
-			"pathVariableData": [],
-			"method": "POST",
-			"data": [],
-			"dataMode": "raw",
-			"tests": null,
-			"currentHelper": "normal",
-			"helperAttributes": {},
-			"time": 1534740628441,
 			"name": "switch on",
-			"description": "",
-			"collectionId": "7018893b-89d1-dfd9-de97-daac2a91f4d5",
-			"responses": [],
-			"rawModeData": "{\"status\": \"on\"}\r"
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/data",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "{{iotSwitchIp}}",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"status\": \"on\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "switch off",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/data",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "{{iotSwitchIp}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"status\": \"off\"}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "config",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/config",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "data",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/data",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.4.2",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "ping",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/ping",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "restart",
+			"request": {
+				"url": "{{iotinatorMasterIP}}/api/restart",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Xiot-forward-to",
+						"value": "192.168.4.2",
+						"description": "",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get Switch data",
+			"request": {
+				"url": "{{iotSwitchIp}}/api/data",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"iotSwitch\",\"slaveIP\":\"192.168.4.3\"}\r"
+				},
+				"description": ""
+			},
+			"response": []
 		}
 	]
 }
