@@ -4,11 +4,10 @@
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-#include "masterConfig.h"
+#include "MasterConfig.h"
 
-// TODO: use XIOTConfig as super class. 
-MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEEPROMConfigClass(version, "iotinator", sizeof(MasterConfigStruct)) {
-  setName(name);
+ 
+MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):ModuleConfigClass(version, "iotinator", name, sizeof(MasterConfigStruct)) {
   // Initialize the array of RegisteredPhoneNumberClass objects from the data structure
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i] = new RegisteredPhoneNumberClass(&(_getDataPtr()->registeredNumbers[i]));
@@ -22,7 +21,6 @@ MasterConfigClass::MasterConfigClass(unsigned int version, const char* name):XEE
  */
 void MasterConfigClass::initFromDefault() {
   XEEPROMConfigClass::initFromDefault(); // handles version init
-  setName(MODULE_NAME);
   // Reset all registered phone numbers
   for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
     _phoneNumbers[i]->reset();
@@ -41,22 +39,6 @@ void MasterConfigClass::initFromDefault() {
   setGmtOffset(DEFAULT_GMT_HOUR_OFFSSET, DEFAULT_GMT_MIN_OFFSSET);
   setDefaultAPExposition(DEFAULT_AP_EXPOSITION);
 }
-
- /**
-  * Set the name in the data structure
-  *
-  */
- void MasterConfigClass::setName(const char* name) {
-   XUtils::safeStringCopy(_getDataPtr()->name, name, NAME_MAX_LENGTH);
- }
- 
- /**
-  * Get the name from the data structure
-  *
-  */
- char* MasterConfigClass::getName(void) {
-   return _getDataPtr()->name;
- }
  
 void MasterConfigClass::setHomeSsid(const char* ssid) {
   XUtils::safeStringCopy(_getDataPtr()->homeSsid, ssid, SSID_MAX_LENGTH);

@@ -10,7 +10,7 @@
 #include <XIOTConfig.h>
 #include <XUtils.h>
 
-#define CONFIG_VERSION 4
+#define CONFIG_VERSION 5
 #define MODULE_NAME "iotinator"
 
 #define HOSTNAME_MAX_LENGTH 50
@@ -23,9 +23,7 @@
 #define DEFAULT_GMT_HOUR_OFFSSET 2
 #define DEFAULT_GMT_MIN_OFFSSET 0
 
-struct MasterConfigStruct:XEEPROMConfigDataStruct {
-  // First 2 members (version and type) are inherited from XEEPROMConfigDataStruct   
-  char name[NAME_MAX_LENGTH + 1]; 
+struct MasterConfigStruct:ModuleConfigStruct {
   // Array to store phone number information, permissions, ...
   phoneNumberDataType registeredNumbers[MAX_PHONE_NUMBERS];
   // Hostname for webapps, statistics, etc
@@ -54,7 +52,7 @@ struct MasterConfigStruct:XEEPROMConfigDataStruct {
 };
 
  
-class MasterConfigClass:public XEEPROMConfigClass {
+class MasterConfigClass:public ModuleConfigClass {
 public:
   MasterConfigClass(unsigned int version, const char* name);
   virtual void initFromDefault(void) override;
@@ -62,9 +60,7 @@ public:
   RegisteredPhoneNumberClass* getRegisteredPhoneByNumber(const char* number); 
   RegisteredPhoneNumberClass* getRegisteredPhone(unsigned int offset); 
   void removePhone(const char*);
-  void addPhone(const char*);
-  char* getName(void);
-  void setName(const char*);   
+  void addPhone(const char*);  
   void setHomeSsid(const char* ssid);
   void setWebSite(const char* webSite);
   void setWebSite(String webSite);

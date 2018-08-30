@@ -10,9 +10,9 @@
 #include <TimeLib.h>
 #include <NtpClientLib.h>
 #include <XIOTDisplay.h>
-#include <XIOTModule.h> 
 
-#include "masterConfig.h"
+#include "MasterConfig.h"
+#include "MasterModule.h" 
 #include "AgentCollection.h"
 
 #include "initPageHtml.h"
@@ -85,17 +85,14 @@ void setup() {
 
   WiFi.mode(WIFI_OFF);
   Serial.begin(9600);
-  delay(100);
+
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
   config->init();
-  Serial.println(config->getName());
 
-  // Initialise the OLED display
-  oledDisplay = new DisplayClass(0x3C, sda, scl);
   initDisplay();
   
-  // TODO: this implemenation is crap. It uses some of the module features, but not others...
-  module = new XIOTModule(oledDisplay);
+  module = new MasterModule(config, 0x3C, sda, scl);
+
   // Master endpoints need to be set first (when same endpoints: only first one set is called)
   addEndpoints();
   module->addModuleEndpoints();
@@ -574,7 +571,7 @@ void timeDisplay() {
 void registerToWebsite() {
   if(!checkApiKey()) return; 
 
-  const size_t bufferSize = JSON_OBJECT_SIZE(6); 
+  const size_t bufferSize = JSON_OBJECT_SIZE(6) + 100; 
   DynamicJsonBuffer jsonBuffer(bufferSize);
   JsonObject& root = jsonBuffer.createObject();  
   root["name"] = config->getName();
