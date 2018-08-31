@@ -10,7 +10,7 @@ function getList() {
   
   $mysqli = connect();
   $stmt =  $mysqli->stmt_init();
-  $stmt->prepare('select mac, name, local_ip, date from xiot_my where gateway_ip = ? order by local_ip ') OR die("Invalid statement");
+  $stmt->prepare('select mac, name, local_ip, date from xiot_my where gateway_ip = ? order by date desc ') OR die("Invalid statement");
   
   $stmt->bind_param("s", $gatewayIp);
   $stmt->execute();
