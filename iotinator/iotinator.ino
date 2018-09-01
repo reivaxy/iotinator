@@ -163,10 +163,14 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
 void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   ipOnHomeSsid = ipInfo.ip.toString();
   Serial.printf("Got IP on %s: %s\n", config->getHomeSsid(), ipOnHomeSsid.c_str());
-  if(module->isOTAStarted()) {
+  homeWifiConnected = true;
+  if(module->isWaitingOTA()) {
+    char message[40];
+    sprintf(message, "Ota master ready: %s", ipOnHomeSsid.c_str());
+    oledDisplay->setLine(0, message, NOT_TRANSIENT, NOT_BLINKING); 
+    ArduinoOTA.begin();    
     return;
   }
-  homeWifiConnected = true;
   homeWifiFirstConnected = true;
   if (mdns.begin("esp8266", WiFi.localIP())) {
     Serial.println("MDNS responder started");
@@ -390,11 +394,11 @@ void addEndpoints() {
       sprintf(message, "{\"%s\":\"%s\",\"%s\":\"%s\"}", XIOTModuleJsonTag::ssid, config->getHomeSsid(), XIOTModuleJsonTag::pwd, config->getHomePwd());
       module->APIPost(forwardTo, "/api/ota", message, &httpCode, NULL, 0);
     } else {
-      char message[30];
-      sprintf(message, "Ota ready: %s", ipOnHomeSsid.c_str());
-      oledDisplay->setLine(0, message, NOT_TRANSIENT, NOT_BLINKING);    
-//      httpCode = module->startOTA(config->getHomeSsid(), config->getHomePwd());
-      httpCode = module->startOTA("", "");
+      WiFi.mode(WIFI_OFF);
+      delay(400);
+      WiFi.mode(WIFI_STA);   
+      httpCode = module->startOTA(config->getHomeSsid(), config->getHomePwd());
+//      httpCode = module->startOTA("", "");
     }
     module->sendJson("{}", httpCode);      
   });  
@@ -669,7 +673,7 @@ void wifiDisplay() {
  *********************************/
 void loop() {
 
-  if(module->isOTAStarted()) {
+  if(module->isWaitingOTA()) {
     oledDisplay->refresh();
     ArduinoOTA.handle();
     return;
