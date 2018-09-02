@@ -4,7 +4,7 @@
 
 ### Some use cases
 
-You come home, use your phone to turn on the light of the living room and adjust its brighness.
+You come home, use your phone to browse to http://my.iotinator.com and turn on the light of the living room and adjust its brighness.
 
 You are about to come home, use your phone to remotely turn the heater on so that the appartment is comfy when you get there.
 
@@ -28,9 +28,11 @@ And here is the switch module encased and functional:
 <img src="resources/prototype/finished.jpg" width="400px"/>
 
 
-You can easily build already available modules*, which are usually just a few dollars of very easy to find hardware.
+You can easily build already available modules, which are usually just a few dollars of very easy to find hardware.
 
-But you can easily design your own modules to fit your needs: in just a few lines of code, you can design a module able to connect to a wifi network, and equipped with a tiny Oled screen, to monitor something or control it, and make its collected data and actions available through a webApp showing all connected modules, but also through sending and receiving GSM text messages.
+But you can easily design your own modules to fit your needs: in just a few lines of code, you can design a module able to connect to a wifi network, and equipped with a tiny Oled screen, to monitor something or control it, and make its collected data and actions available through a webApp showing all connected modules, but also through sending and receiving GSM text messages (not yet ready).
+
+You can also update your modules wirelessly once in place, to keep improving them.
 
 Some can operate using a small battery, others will need a power adapter, others can run directly on your main power source, or on a solar source.
 
@@ -41,16 +43,15 @@ Examples of modules are:
  
   <img src="resources/switch_ready.jpg" width="200px"/>
   
-- A programmable scheduler to turn on/off random devices
-- Monitoring for water leaks
-- Monitoring for fire/fumes
-- Monitoring an aquarium parameters to alert when something's off (https://github.com/reivaxy/aquaMonitor)
-- Controling various devices through their IR remote control port, replacing many remote controls with the advantage of working according to a programmed schedule, or remotely from home, which can be nice to set the heater or A/C on a little before coming home.
+- A programmable scheduler to turn on/off random devices. Derived from the iotSwitch module by just adding some scheduling feaures.
+- Monitoring for water leaks to send alerts (push, sms, ...)
+- Monitoring for fire/fumes to send alerts
+- Monitoring an aquarium parameters to alert when something's off (the very source of this project idea, which I had while working on https://github.com/reivaxy/aquaMonitor)
+- Controlling various devices through their IR remote control port, replacing many remote controls with the advantage of working according to a programmed schedule, or remotely from home, which can be nice to set the heater or A/C on a little before coming home.
 - You name it !
 
-(*) ok, not many are available at this time, it's a work in progress. Hopefully some people join, design and share their own!
 
-### You read that far and want to know more ? Nice !
+### And if you want to know more...
 
 Let's dive deeper:
 
