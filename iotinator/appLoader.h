@@ -1,10 +1,10 @@
 /**
- *  iotinator master module web app main page 
+ *  iotinator master module web app loader page 
  *  Xavier Grosjean 2018
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
  
-char appPage[] = "\
+char appLoader[] = "\
 <html title='Iotinator'>\
 <head>\
 <meta charset='utf-8'>\

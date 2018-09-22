@@ -5,7 +5,7 @@ var XIOT = {};
 
 XIOT.View = Backbone.View.extend({
   xiotSync: function(model) {
-    Backbone.sync("update", model, {url:document.location.href + "api/data", headers:{"Xiot-forward-to": model.__ip}});
+    Backbone.sync("update", model, {url:document.location.origin + "/api/data", headers:{"Xiot-forward-to": model.__ip}});
   }
   
 }); 
@@ -70,9 +70,7 @@ $(document).ready(function() {
     }
     
   });
-  let url = document.location.href.split('/');
-  url.pop();
-  url = url.join('/') + "/api/list";
+  let url = document.location.origin + "/api/list";
   let cssJsLoaded = {};
   
   let moduleListModel = Backbone.Collection.extend({

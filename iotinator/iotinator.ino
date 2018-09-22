@@ -16,7 +16,8 @@
 #include "AgentCollection.h"
 
 #include "initPageHtml.h"
-#include "appPageHtml.h"
+#include "appLoader.h"
+#include "appGLALoader.h"
 
 #define TIME_STR_LENGTH 100
 
@@ -54,6 +55,10 @@ time_t timeLastPing = 0;
 AgentCollection *agentCollection;
 Agent* agentToRename = NULL;
 
+char glaCss1[50];
+char glaCss2[50];
+char glaJs1[50];
+char glaJs2[50];
 
 int scl = 12;
 int sda = 14;
@@ -216,7 +221,11 @@ void addEndpoints() {
   server = module->getServer();  
   server->on("/", HTTP_GET, [](){
     if (config->isAPInitialized()) {
-      printAppPage();
+      if(server->arg("app") == "gla") {
+        printAppGLAPage();
+      } else {
+        printAppPage();
+      }
     } else {
       printHomePage();
     }
@@ -431,9 +440,25 @@ void printNumbers() {
   }
 }
 
+// For now, use specific methods to load each app.
+// Later: website could provide a manifest exposing all available apps, and their dependencies,
+// and make this generic.
 void printAppPage() {
-  char *page = (char *)malloc(strlen(appPage) + strlen(config->getWebSite()) + 1);
-  sprintf(page, appPage, config->getWebSite());
+  char *page = (char *)malloc(strlen(appLoader) + strlen(config->getWebSite()) + 1);
+  sprintf(page, appLoader, config->getWebSite());
+  module->sendHtml(page, 200);
+  free(page);
+}
+
+void printAppGLAPage() {
+  char *page = (char *)malloc(strlen(appGLALoader) 
+  + strlen(config->getWebSite()) 
+  + strlen(glaCss1) 
+  + strlen(glaCss2) 
+  + strlen(glaJs1) 
+  + strlen(glaJs2) 
+  + 1);
+  sprintf(page, appGLALoader, config->getWebSite(), glaCss1, glaCss2, glaJs1, glaJs2);
   module->sendHtml(page, 200);
   free(page);
 }
@@ -575,6 +600,9 @@ void timeDisplay() {
   }
 }
 
+// Registration will allow to autodiscover the master module by opening the page http://my.iotinator.com
+// The server will return the manifest for the new web app (app1) so that the master module can 
+// generate the bootstrap page to load the app.
 void registerToWebsite() {
   if(!checkApiKey()) return; 
 
@@ -616,9 +644,24 @@ void registerToWebsite() {
   if(httpCode != 200) {
     Serial.println("Registration failed");
     Serial.println(jsonResultStr); // it's a json string, actually
-  } else {
-    Serial.println("Registered");
+    return;
   }
+  Serial.println("Registered");
+  // Got the manifest. For now, just one App, hardcoded. Later, could be all available apps... etc.
+  // Buffer size: https://arduinojson.org/assistant
+  const int bufferSize1 = 3*JSON_OBJECT_SIZE(1) + 2*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 400;
+  StaticJsonBuffer<bufferSize1> jsonBuffer1; 
+  JsonObject& root1 = jsonBuffer1.parseObject(jsonResultStr);
+  
+  strlcpy(glaCss1, root1["vendor"]["css"], sizeof(glaCss1));   
+  Serial.println(glaCss1);
+  strlcpy(glaCss2, root1["main"]["css"], sizeof(glaCss2));   
+  Serial.println(glaCss2);
+  strlcpy(glaJs1, root1["vendor"]["js"], sizeof(glaJs1));   
+  Serial.println(glaJs1);
+  strlcpy(glaJs2, root1["main"]["js"], sizeof(glaJs2));   
+  Serial.println(glaJs2);
+  
 }
 
 unsigned char checkApiKey() {

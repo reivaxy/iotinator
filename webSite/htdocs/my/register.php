@@ -64,6 +64,10 @@ $stmt->close();
 $mysqli->commit();
 $mysqli->close();
 
-echo "{}";
+// Registration is ok, return the manifest for the webApp 
+// For now, it's hardcoded. Could generate a manifest exposing all available apps with their
+// dependencies
 
+//echo "{}";
+echo file_get_contents("../appGLA/webpack-assets.json");
 ?>
