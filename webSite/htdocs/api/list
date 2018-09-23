@@ -1,17 +1,7 @@
 {
     "agentList": {
-        "5c:cf:7f:24:7a:ef": {
-            "name": "Dimmer_1",
-            "ip": "192.168.4.2",
-            "canSleep": false,
-            "connected": 0,
-            "uiClassName": "dimmerUIClass",
-            "heap": 38664,
-            "pingPeriod": 0,
-            "custom": "{\"level\":23}"
-        },
         "60:01:94:06:80:51": {
-            "name": "Fan",
+            "name": "Ventilo",
             "ip": "192.168.4.4",
             "canSleep": false,
             "connected": 0,
@@ -21,7 +11,7 @@
             "custom": "{\"speed\":0, \"osc\":\"off\"}"
         },
         "84:f3:eb:96:82:aa": {
-            "name": "Lampe Coin",
+            "name": "Lampe",
             "ip": "192.168.4.3",
             "canSleep": false,
             "connected": 0,
