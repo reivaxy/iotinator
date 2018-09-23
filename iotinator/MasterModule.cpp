@@ -6,13 +6,8 @@
 
 #include "MasterModule.h"
 
-MasterModule::MasterModule(MasterConfigClass* config, int displayAddr, int displaySda, int displayScl, int intPin, int ctrlPinParam):XIOTModule(config, displayAddr, displaySda, displayScl) {
-  _isMaster = true;
-  _oledDisplay->setLineAlignment(2, TEXT_ALIGN_CENTER);
-  setLevel(config->getDefaultLevel());
+MasterModule::MasterModule(MasterConfigClass* config, int displayAddr, int displaySda, int displayScl):XIOTModule(config, displayAddr, displaySda, displayScl) {
+
 }
 
-bool MasterModule::customBeforeOTA() {
-  return true;
-}
 

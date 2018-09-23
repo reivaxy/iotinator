@@ -3,6 +3,11 @@
  *  Xavier Grosjean 2017
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
+
+// This is used to conditionally compile master related stuff in XIOTModule
+// Should ease the enhancement that will make any agent a secondary master
+// to work around the limit of how many agents can connect to the master wifi ssid
+#define XIOT_MASTER 1
  
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
@@ -13,7 +18,6 @@
 
 #include "MasterConfig.h"
 #include "MasterModule.h" 
-#include "AgentCollection.h"
 
 #include "initPageHtml.h"
 #include "appLoader.h"
@@ -51,10 +55,10 @@ MDNSResponder mdns;
 time_t timeNow = 0; 
 time_t timeLastTimeDisplay = 0;
 time_t timeLastWifiDisplay = 0;
-time_t timeLastPing = 0;
-AgentCollection *agentCollection;
-Agent* agentToRename = NULL;
 
+// Temporary: handling of new UI
+// TODO ?: have webside provide a manifest with available UIs
+// TODO ?: have master download and serve the loader page of the chosen UI
 char glaCss1[50];
 char glaCss2[50];
 char glaJs1[50];
@@ -62,7 +66,6 @@ char glaJs2[50];
 
 int scl = 12;
 int sda = 14;
-
 
 
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
@@ -81,29 +84,28 @@ String ipOnHomeSsid;
 
 void setup() {
 
-  //#define ESP01
+  //#define ESP01  // Uncomment this to use an ESP01 as master.
   #ifdef ESP01
-  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
+  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);  // Serial used only to send messages, not read => reuse output
   scl = 2;
   sda = 0;
+  #else
+  Serial.begin(115200);
   #endif
 
   WiFi.mode(WIFI_OFF);
-  Serial.begin(9600);
 
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
   config->init();
 
   initDisplay();
-  
+ 
   module = new MasterModule(config, 0x3C, sda, scl);
 
   // Master endpoints need to be set first (when same endpoints: only first one set is called)
+  // TODO XIOTMODULE Check this 
   addEndpoints();
   module->addModuleEndpoints();
-  
-  // Initialize the Agent Collection
-  agentCollection = new AgentCollection(module);
   
   // After a reset, open Default Access Point
   // If Access Point was customized, we'll switch to it after one minute
@@ -228,80 +230,16 @@ void addEndpoints() {
     }
   });
 
-  server->on("/init", HTTP_GET, [](){
+  server->on("/init", HTTP_GET, []() {
     printHomePage();
   });
 
-  server->on("/api/list", HTTP_GET, [](){
-    int size = agentCollection->getCount();
-    int customStrSize = 0;
-    
-    // Size estimation: https://arduinojson.org/assistant/
-    // TODO: update this when necessary : 10 fields per agent (for now it's actually 8)
-    const size_t bufferSize = size*JSON_OBJECT_SIZE(10)
-                              + JSON_OBJECT_SIZE(size)
-                              +  + JSON_OBJECT_SIZE(1) ;
-    
-    DynamicJsonBuffer jsonBuffer(bufferSize);
-    JsonObject& root = jsonBuffer.createObject();    
-    JsonObject& agentList = root.createNestedObject("agentList");
-    
-    agentCollection->list(agentList, &customStrSize);
- 
-    char* strBuffer = (char *)malloc(customStrSize); 
-    root.printTo(strBuffer, customStrSize-1);
-    Serial.printf("Reserved size: %d, actual size: %d\n", customStrSize, strlen(strBuffer));
-    module->sendJson(strBuffer, 200);
-    free(strBuffer); 
-
-    uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("%s After /api/list Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);   
-  });
-  
-  // TODO: remove duplicated code with XIOTModule !!
-  server->on("/api/rename", HTTP_POST, [&]() {
-    char *forwardTo;
-    XUtils::stringToCharP(server->header("Xiot-forward-to"), &forwardTo);
-    String jsonBody = server->arg("plain");
-    char message[100];
-    
-    // I've seen a few unexplained parsing error so I have set a bigger buffer size...
-    const int bufferSize = 2* JSON_OBJECT_SIZE(2);
-    StaticJsonBuffer<bufferSize> jsonBuffer; 
-    JsonObject& root = jsonBuffer.parseObject(jsonBody); 
-    if (!root.success()) {
-      module->sendJson("{}", 500);
-      if(strlen(forwardTo) != 0) { 
-        oledDisplay->setLine(1, "Renaming agent failed", TRANSIENT, NOT_BLINKING);
-      } else {
-        oledDisplay->setLine(1, "Renaming master failed", TRANSIENT, NOT_BLINKING);
-      }
-      free(forwardTo);
-      return;
-    }
-    // Forward the rename to an agent
-    if(strlen(forwardTo) != 0) {     
-      agentCollection->renameAgent(forwardTo, (const char*)root["name"]);
-      free(forwardTo);
-    } else {
-      free(forwardTo);    
-      if(config == NULL) {
-        module->sendJson("{\"error\": \"No config to update.\"}", 404);
-        return;
-      }
-      sprintf(message, "Renaming master to %s\n", (const char*)root["name"] ); 
-      oledDisplay->setLine(1, message, TRANSIENT, NOT_BLINKING);
-      config->setName((const char*)root["name"]);
-      config->saveToEeprom(); // TODO: partial save !!   
-      oledDisplay->setTitle(config->getName());
-    }    
-    module->sendJson("{}", 200);   // HTTP code 200 is enough
-  });  
   /**
    * This API returns the SSID and PWD of the customized Access Point: modules will use it to connect to iotinator
-   * NB: only 4 clients  can connect (TODO: to check!) 
+   * NB: only 4 clients  can connect
    * => may be agent modules could also create an access point and act as relay for
    * other modules.
+   * TODO: this will need to be moved to XIOModule to allow agent to be secondary masters
    **/
   server->on("/api/config", HTTP_GET, [](){
 //    Serial.println("Rq on /api/config");
@@ -320,111 +258,6 @@ void addEndpoints() {
     root.printTo(configMsg, JSON_STRING_CONFIG_SIZE);
     module->sendJson(configMsg, 200);
   });
-
-  /**
-   * This endpoint allows agent modules to register themselves to master when they initialize
-   */
-  server->on("/api/register", HTTP_POST, [](){
-    char *jsonString;
-    Serial.println("Registering module");
-    // This will allocate jsonString
-    XUtils::stringToCharP(server->arg("plain"), &jsonString);
-    // agentCollection->add method need to copy the data since jsonString will be freed.
-    Serial.println(jsonString); 
-    Agent* agent = agentCollection->add(jsonString);
-    free(jsonString);
-    if(agent == NULL) {
-      module->sendJson("{}", 500);
-      oledDisplay->setLine(1, "Registration failed", TRANSIENT, NOT_BLINKING);
-    } else {
-      module->sendJson("{}", 200);
-      if(agent->getToRename()) {
-        agentToRename = agent;
-      }
-    }
-    char message[100];
-    sprintf(message, "Registered modules: %d", agentCollection->getCount());
-    oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
-  });
-
-  /**
-   * This endpoint allows removing a module
-   */
-  server->on("/api/register", HTTP_DELETE, [](){
-    char *jsonString;
-    Serial.println("Unregistering module");
-
-  });
-
-  // This endpoint is used by modules when they want to update data in the agent collection
-  // (which is the data that the UI is polling)
-  server->on("/api/refresh", HTTP_POST, [](){
-    char *jsonString;
-    Serial.println("Refreshing module");
-    // This will allocate jsonString
-    XUtils::stringToCharP(server->arg("plain"), &jsonString);
-    // agentCollection->add method need to copy the data since jsonString will be freed.
-    Serial.println(jsonString); 
-    Agent* agent = agentCollection->refresh(jsonString);
-    free(jsonString);
-    if(agent == NULL) {
-      module->sendJson("{}", 500);
-      oledDisplay->setLine(1, "Refreshing failed", TRANSIENT, NOT_BLINKING);
-    } else {
-      module->sendJson("{}", 200);
-    }          
-  });
-  
-  // TODO: remove this or make it better. Needed during dev
-  // reset may be only possible by SMS from admin number ?
-  server->on("/api/swarmReset",  HTTP_GET, [](){
-    Serial.println("Rq on /swarmReset");
-    agentCollection->reset();
-    config->initFromDefault();
-    config->saveToEeprom();
-    module->sendJson("{}", 200);
-    gsm.sendSMS(config->getAdminNumber(), "Reset done");  // 
-    WiFi.mode(WIFI_AP);
-    initSoftAP();  
-  });
-
-  // OTA: update 
-  server->on("/api/ota", HTTP_POST, [&]() {
-    String forwardTo = server->header("Xiot-forward-to");
-    String jsonBody = server->arg("plain");
-    int httpCode = 200;
-    if(forwardTo.length() != 0) {    
-      Serial.print("Forwarding ota to ");
-      Serial.println(forwardTo);
-      char message[SSID_MAX_LENGTH + PWD_MAX_LENGTH + 40];
-      sprintf(message, "{\"%s\":\"%s\",\"%s\":\"%s\"}", XIOTModuleJsonTag::ssid, config->getHomeSsid(), XIOTModuleJsonTag::pwd, config->getHomePwd());
-      module->APIPost(forwardTo, "/api/ota", message, &httpCode, NULL, 0);
-    } else {
-      WiFi.mode(WIFI_OFF);
-      delay(400);
-      WiFi.mode(WIFI_STA);   
-      httpCode = module->startOTA(config->getHomeSsid(), config->getHomePwd());
-//      httpCode = module->startOTA("", "");
-    }
-    module->sendJson("{}", httpCode);      
-  });  
-}  
-
-
-// Temp, for tests
-//void ping() {
-//  Serial.println("Ping");
-//  Serial.println(config->getHomeSsid());
-//  Serial.println(WiFi.localIP());
-//  HTTPClient http;
-//  http.begin("http://c-est-simple.com/cgi-bin/webdistrib.cgi?toto=1");
-//  http.addHeader("Content-Type", "multipart/form-data");
-//   doc on payload format: https://docs.internetofthings.ibmcloud.com/messaging/payload.html
-//  int httpCode = http.GET();   // Log stuff to Serial ?
-//  Serial.print("HTTP code: ");
-//  Serial.println(httpCode);
-//  http.end();
-//}
 
 void printNumbers() {
   if(!gsmEnabled) return;
@@ -731,12 +564,6 @@ void loop() {
     initSoftAP();
   }
   
-  // check if any new added agent needs to be renamed
-  if(agentToRename != NULL) {
-    agentCollection->autoRename(agentToRename);
-    agentToRename = NULL;
-  }
-  
   // Check if any request to serve
   server->handleClient();
  
@@ -761,13 +588,7 @@ void loop() {
     // refresh wifi display every Xs to display both ssid/ips alternatively
     wifiDisplay();    
   }
-      
-  if(timeNow - timeLastPing >= MIN_PING_PERIOD*1000) {
-    timeLastPing = timeNow; 
-    agentCollection->ping();
-    uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("%s After ping Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);  
-  } 
+ 
   
   // Things to do only once after connection to internet.
   if(homeWifiFirstConnected) {
