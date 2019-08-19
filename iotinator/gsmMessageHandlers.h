@@ -23,8 +23,24 @@ void clockLostHandler(char *message) {
   oledDisplay->blinkDateTime(true);  // Display time 
 }
 
+// message is like  "SM",3
 void smsReceivedHandler(char *message) {
+  char msgId[10];
+  char readCmd[20];
+  Serial.println("Received SMS");
+  Serial.println(message);
+  char *ptr = strstr(message, ",");
+  if (ptr != NULL) {
+    strcpy(msgId, ptr + 1);     
+    Serial.println(msgId);
+    sprintf(readCmd, "AT+CMGR=%s", msgId);
+    gsm.sendCmd(readCmd);
+  }   
+}
 
+void smsReadyHandler(char *message) {
+  gsm.sendCmd("AT+CMGF=1");
+  gsm.sendCmd("AT+CSCS=\"GSM\"");
 }
 
 void initGsmMessageHandlers() {
@@ -33,7 +49,7 @@ void initGsmMessageHandlers() {
   gsm.setHandler(DISCONNECTION, disconnectionHandler);
   gsm.setHandler(DATETIME_OK, clockHandler);
   gsm.setHandler(DATETIME_NOK, clockLostHandler);
-  /*
-  gsm.setSmsReceivedHandler(smsReceivedHandler);
-  */
+  gsm.setHandler(NEW_SMS, smsReceivedHandler);
+  gsm.setHandler(SMS_READY, smsReadyHandler);
+
 }

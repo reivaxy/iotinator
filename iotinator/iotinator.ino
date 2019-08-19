@@ -25,15 +25,19 @@
 
 // Global object to store config
 MasterConfigClass *config;
+
 DisplayClass *oledDisplay;
 
 #include "gsm.h"
-//SIM800 TX is connected to RX MCU 13 (D7)
+// SIM800 TX is connected to RX MCU 13 (D7)
 #define SIM800_TX_PIN 13
-//SIM800 RX is connected to TX MCU 15 (D8)
+// SIM800 RX is connected to TX MCU 15 (D8)
 #define SIM800_RX_PIN 15
+// SIM800 Reset is connected to TX MCU 2 (D4)
+#define SIM800_RESET_PIN 2
+
 SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
-GsmClass gsm(&serialSIM800);
+GsmClass gsm(&serialSIM800, 2, "5517");
 #include "gsmMessageHandlers.h"
 
 ESP8266WebServer* server;
@@ -81,7 +85,7 @@ String ipOnHomeSsid;
 
 void setup() {
 
-  //#define ESP01
+  #undef ESP01
   #ifdef ESP01
   Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
   scl = 2;
@@ -96,7 +100,7 @@ void setup() {
   Serial.println(config->getName());
 
   // Initialise the OLED display
-  oledDisplay = new DisplayClass(0x3C, sda, scl);
+  oledDisplay = new DisplayClass(0x3C, sda, scl, true, 255);
   initDisplay();
   
   // TODO: this implemenation is crap. It uses some of the module features, but not others...

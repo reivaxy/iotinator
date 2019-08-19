@@ -12,21 +12,35 @@
 
 unsigned long lastAnswer = 0;
 
+unsigned long previousQSize = 0;
 // TODO fifo for gsm commands ??
-GsmClass::GsmClass(SoftwareSerial* serial) {
+GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio, char* pin) {
   _serialSIM800 = serial;
+  _resetGpio = resetGpio;
+  strlcpy(_pinCode, pin, 5);
 };
 
 bool GsmClass::init() {
+  char message[20];
+  
   if (DISABLE_GSM) {
     Serial.println("GSM disabled.");
     return false;
   }
-  //sendCmd("ATE 0");      // No echo
-  sendCmd("AT+CMGF=10");    // Set Text mode (before connection ? check if ok)
-  sendCmd("AT+CLTS=1");    // Get local time stamp
-  sendCmd("AT+COPS=0");    // Disconnect
-  sendCmd("AT+COPS=2");    // Connect
+  _serialSIM800->begin(9600);
+  Serial.println("GSM enabled.");
+  pinMode(_resetGpio, OUTPUT);   
+  digitalWrite(_resetGpio, LOW);
+  delay(1000);
+  digitalWrite(_resetGpio, HIGH);
+  delay(5000);
+  _isInitialized = true;
+  sendCmd("AT");  // This allows initializing uart on sim board (rate...)
+  sendCmd("");    // get rid of garbage characters (no command but wait for response) 
+  //sendCmd("ATE0");
+  // Send PIN code
+  sprintf(message, "AT+CPIN=\"%s\"", _pinCode);
+  sendCmd(message);
   return true;
 }
 
@@ -35,26 +49,30 @@ bool GsmClass::init() {
  *
  */ 
 void GsmClass::sendCmd(const char* cmd) {
-  if (DISABLE_GSM) return;
+  if (DISABLE_GSM || !_isInitialized) return;
   char* newCmd = (char *)malloc(strlen(cmd) + 1);
   strcpy(newCmd, cmd);
   _cmds.push(newCmd);
 }
 
 void GsmClass::refresh() {
-  if (DISABLE_GSM) return;
+  if (DISABLE_GSM || !_isInitialized) return;
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
-  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
-    _checkConnection();
-  }
-  if(XUtils::isElapsedDelay(now, &_lastCheckTime, CHECK_TIME_PERIOD)) {
-    _getTime();
-  }
+//  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
+//    _checkConnection();
+//  }
   
   // if not already waiting for a command result and command queue not empty, send command
+  if(_cmds.size() != previousQSize) {
+    previousQSize = _cmds.size();
+    Serial.print("Cmd queue size: ");
+    Serial.println(previousQSize);
+  }
   if (!_waitingForCmdResult && !_cmds.empty()) {
     char* cmd = _cmds.front();
+    Serial.print("GSM cmd: ");
+    Serial.println(cmd);
     _serialSIM800->println(cmd);
     _waitingForCmdResult = true;
     _cmds.pop();
@@ -64,14 +82,9 @@ void GsmClass::refresh() {
   checkGsm();
 }
 
-void GsmClass::_getTime() {
-  if (DISABLE_GSM) return;
-  Serial.println("Get time from gsm");
-  sendCmd("AT+CCLK?");
-}
-
 // TODO: this should be called and handled internally, periodically
 void GsmClass::_checkConnection() {
+return;
   if (DISABLE_GSM) return;
   Serial.println("Check gsm network connection");
   sendCmd("AT+CREG?");
@@ -127,7 +140,7 @@ void GsmClass::checkGsm() {
     Serial.print("$");
     Serial.print(message);
     Serial.println("$");
-    char resultId[10];
+    char resultId[20];
     char *ptr = NULL;
     
     ptr = strstr(message, ": ");
@@ -159,18 +172,25 @@ void GsmClass::checkGsm() {
           gsmEvent = DATETIME_OK;
         }     
       }
+      if (strncmp(resultId, "+CMTI", 5) == 0) {
+        gsmEvent = NEW_SMS;      
+      }
     } else {
       if ((strncmp(message, "OK", 2) == 0) || (strncmp(message, ">", 1) == 0)) {
         lastAnswer = millis();
         // Ready to send the next command in queue (if any)
         _waitingForCmdResult = false;      
       }
+      if (strncmp(message, "SMS Ready", 9) == 0) {
+        gsmEvent = SMS_READY;      
+      }      
     }
   }
       
-  if (millis() - lastAnswer > CHECK_NETWORK_PERIOD) {
+  if (_waitingForCmdResult && (millis() - lastAnswer > CHECK_NETWORK_PERIOD)) {
     gsmEvent = TIMEOUT;
     lastAnswer = millis(); // To not process at each gsmRefresh
+     _waitingForCmdResult = false;      
   }
  
   if (gsmEvent != NONE) {      
@@ -187,6 +207,7 @@ void GsmClass::checkGsm() {
     if (!found) {
       Serial.print("Unhandled event: ");
       Serial.println(gsmEvent);
+
     }
   }    
 }

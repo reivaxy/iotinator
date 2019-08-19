@@ -1,6 +1,6 @@
 #pragma once
 
-#define DISABLE_GSM true
+#define DISABLE_GSM false
 
 #include <SoftwareSerial.h>
 #include <Arduino.h>
@@ -11,7 +11,7 @@
 #undef min  // Because Arduino.h and queue are not compatible otherwise
 #include <queue>
 
-enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, NEW_SMS, TIMEOUT};
+enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, NEW_SMS, TIMEOUT, SMS_READY};
 
 typedef std::multimap <GsmEvents, void (*)(char*)>  handlerMap;
 typedef std::pair <GsmEvents, void (*)(char*)>  handlerPair;
@@ -19,7 +19,7 @@ typedef std::pair <GsmEvents, void (*)(char*)>  handlerPair;
 
 class GsmClass {
 public:
-  GsmClass(SoftwareSerial* serial);
+  GsmClass(SoftwareSerial* serial, int resetGpio, char* pin);
   
   void initTimeFromNetwork();
   void checkGsm();
@@ -32,16 +32,17 @@ public:
 protected:
   void _connectionTimeOutHandler(char *message);
   void _checkConnection();
-  void _getTime();
   
   SoftwareSerial* _serialSIM800;
   handlerMap _handlers;  
 
+  int _resetGpio = 0;
+  char _pinCode[5] ;
   unsigned long _lastCheckConnection = 0;
-  unsigned long _lastCheckTime = 0;
   unsigned long _lastCheckSms = 0;
   bool _isConnected = false;
   bool _timeisValid = false;
+  bool _isInitialized = false;
   
   std::queue<char*> _cmds;
   bool _waitingForCmdResult = false;   
