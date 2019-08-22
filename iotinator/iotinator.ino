@@ -37,7 +37,7 @@ DisplayClass *oledDisplay;
 #define SIM800_RESET_PIN 2
 
 SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
-GsmClass gsm(&serialSIM800, 2, "5517");
+GsmClass gsm(&serialSIM800, 2);
 #include "gsmMessageHandlers.h"
 
 ESP8266WebServer* server;
@@ -131,6 +131,7 @@ void setup() {
   stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
   
   initGsmMessageHandlers();
+  gsm.setPin(config->getSimPin());
   gsmEnabled = gsm.init();
   printNumbers();     
   
@@ -560,6 +561,17 @@ void printHomePage() {
         config->setHomePwd(homePwd);
       }
       
+      // Read and save sim PIN
+      String simPin = server->arg("simPin");
+      if( simPin.length() > 0) {
+        // simPin need to be 4 characters
+        if(simPin.length() != 4) {
+          module->sendText(MSG_ERR_PIN_LENGTH, 403);
+          return;
+        }
+        config->setSimPin(simPin.c_str());
+      }
+            
       
       // TODO: when GSM connected, send code, display confirmation page, 
       // and save once code confirmed

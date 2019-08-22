@@ -111,6 +111,9 @@ void MasterConfigClass::setApSsid(String ssidString) {
 void MasterConfigClass::setApPwd(const char* pwd) {
   XUtils::safeStringCopy(_getDataPtr()->apPwd, pwd, PWD_MAX_LENGTH);
 }
+void MasterConfigClass::setSimPin(const char* simPin) {
+  XUtils::safeStringCopy(_getDataPtr()->simPin, simPin, 4);
+}
 void MasterConfigClass::setApPwd(String pwdString) {
   char pwd[PWD_MAX_LENGTH + 1];
   pwdString.toCharArray(pwd, (unsigned int)PWD_MAX_LENGTH);
@@ -133,6 +136,10 @@ char* MasterConfigClass::getWebSite(void) {
 
 char* MasterConfigClass::getNtpServer(void) {
    return _getDataPtr()->ntpHostName;
+}
+
+char* MasterConfigClass::getSimPin(void) {
+   return _getDataPtr()->simPin;
 }
 
 // For the first 60 seconds the default AP is opened

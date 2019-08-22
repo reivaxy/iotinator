@@ -1,6 +1,7 @@
 <?
 
 require('../../includes/utils.inc.php');
+$header = apache_request_headers();
 
 // Ip to lookup. TODO : Check if HTTP_X_FORWARDED_FOR and use it ?
 $gatewayIp = $_SERVER['REMOTE_ADDR'];
@@ -16,6 +17,11 @@ $name = $json['name'];
 $mac = $json['mac'];
 // API KEY to check registration
 $apikey = $json['apikey'];
+
+$headerApiKey = $header['apikey'];
+if($headerApiKey) {
+  $apikey = $headerApiKey;
+}
 
 if(!$localIp || !$name || !$mac || !$apikey) {
   returnError("Bad payload.");

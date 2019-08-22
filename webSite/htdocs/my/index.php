@@ -41,8 +41,9 @@ if(count($modules) == 1) {
   <body>
 <?
     $count = count($modules);
+    $ip = $_SERVER['REMOTE_ADDR'];
     if($count == 0) {
-      echo "<span class=\"error\">No iotinator master module found on your network.</span><br/>";          
+      echo "<span class=\"error\">No iotinator master module found on your network $ip</span><br/>";          
     } else {
 ?>
     <table>

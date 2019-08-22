@@ -14,11 +14,14 @@ unsigned long lastAnswer = 0;
 
 unsigned long previousQSize = 0;
 // TODO fifo for gsm commands ??
-GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio, char* pin) {
+GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio) {
   _serialSIM800 = serial;
   _resetGpio = resetGpio;
-  strlcpy(_pinCode, pin, 5);
 };
+
+void GsmClass::setPin(const char* pin) {
+  strlcpy(_pinCode, pin, 5);
+}
 
 bool GsmClass::init() {
   char message[20];
@@ -146,7 +149,7 @@ void GsmClass::checkGsm() {
     ptr = strstr(message, ": ");
     if (ptr != NULL) {
       *ptr = 0;
-      strcpy(resultId, message);
+      strcpy(resultId, message);  // resultId contains the response prefix (like +CMGR" for instance)
       Serial.println(resultId);
       ptr += 2;
       strcpy(resultValue, ptr);     
@@ -172,8 +175,13 @@ void GsmClass::checkGsm() {
           gsmEvent = DATETIME_OK;
         }     
       }
+      // incoming SMS 
       if (strncmp(resultId, "+CMTI", 5) == 0) {
-        gsmEvent = NEW_SMS;      
+        gsmEvent = INCOMING_SMS;      
+      }
+      // response to read message command: need to read incoming message until empty line and then 'OK' alone on a line
+      if (strncmp(resultId, "+CMGR", 5) == 0) {
+        gsmEvent = READING_SMS;      
       }
     } else {
       if ((strncmp(message, "OK", 2) == 0) || (strncmp(message, ">", 1) == 0)) {
@@ -181,8 +189,9 @@ void GsmClass::checkGsm() {
         // Ready to send the next command in queue (if any)
         _waitingForCmdResult = false;      
       }
+      // Message sent by SIM800 when ready for SMS (not a specific command response)
       if (strncmp(message, "SMS Ready", 9) == 0) {
-        gsmEvent = SMS_READY;      
+        gsmEvent = READY_FOR_SMS;      
       }      
     }
   }

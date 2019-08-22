@@ -49,7 +49,7 @@ void initGsmMessageHandlers() {
   gsm.setHandler(DISCONNECTION, disconnectionHandler);
   gsm.setHandler(DATETIME_OK, clockHandler);
   gsm.setHandler(DATETIME_NOK, clockLostHandler);
-  gsm.setHandler(NEW_SMS, smsReceivedHandler);
-  gsm.setHandler(SMS_READY, smsReadyHandler);
+  gsm.setHandler(INCOMING_SMS, smsReceivedHandler);
+  gsm.setHandler(READY_FOR_SMS, smsReadyHandler);
 
 }

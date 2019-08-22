@@ -15,6 +15,7 @@
 #define MSG_INIT_NTP_HOST "Time server NTP Host"
 #define MSG_INIT_WEBSITE "Web site URL"
 #define MSG_INIT_API_KEY "Api Key from Web site registration"
+#define MSG_INIT_SIM_PIN "SIM PIN"
 
 #define MSG_INIT_REQUEST "Please initialize"
 #define MSG_INIT_DONE "Init done"
@@ -32,3 +33,4 @@
 #define MSG_ERR_BAD_REQUEST "Bad Request"
 #define MSG_ERR_PASSWORD_LENGTH "Password must be at least 8 characters"
 #define MSG_ERR_ADMIN_LENGTH "Admin phone number must be at least 10 characters"
+#define MSG_ERR_PIN_LENGTH "PIN SIM must be 4 characters"

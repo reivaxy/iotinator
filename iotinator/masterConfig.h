@@ -51,6 +51,8 @@ struct MasterConfigStruct:XEEPROMConfigDataStruct {
   int8_t gmtHourOffset = DEFAULT_GMT_HOUR_OFFSSET;
   int8_t gmtMinOffset = DEFAULT_GMT_MIN_OFFSSET;
   
+  char simPin[5]; // sim code for sim card
+  
 };
 
  
@@ -78,6 +80,7 @@ public:
   void setApSsid(const char* ssid);
   void setApSsid(String ssid);
   void setApPwd(const char* pwd);
+  void setSimPin(const char* pwd);
   void setApPwd(String pwd);
   char* getHomeSsid(void);
   char* getWebSite(void);
@@ -86,6 +89,7 @@ public:
   char* getHomePwd(void);
   char* getApSsid(bool force=false);
   char* getApPwd(bool force=false);
+  char* getSimPin();
   void setDefaultAPExposition(int delay);
   int getDefaultAPExposition(void);
   
