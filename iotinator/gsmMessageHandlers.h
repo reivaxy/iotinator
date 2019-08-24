@@ -41,6 +41,7 @@ void smsReceivedHandler(char *message) {
 void smsReadyHandler(char *message) {
   gsm.sendCmd("AT+CMGF=1");
   gsm.sendCmd("AT+CSCS=\"GSM\"");
+  gsm.sendCmd("AT+CREG?");
 }
 
 void initGsmMessageHandlers() {

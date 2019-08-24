@@ -13,7 +13,8 @@
 unsigned long lastAnswer = 0;
 
 unsigned long previousQSize = 0;
-// TODO fifo for gsm commands ??
+
+// TODO handle a different fifo for gsm commands to store them while connection is not done ??
 GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio) {
   _serialSIM800 = serial;
   _resetGpio = resetGpio;
@@ -62,9 +63,9 @@ void GsmClass::refresh() {
   if (DISABLE_GSM || !_isInitialized) return;
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
-//  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
-//    _checkConnection();
-//  }
+  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
+    _checkConnection();
+  }
   
   // if not already waiting for a command result and command queue not empty, send command
   if(_cmds.size() != previousQSize) {
@@ -87,7 +88,6 @@ void GsmClass::refresh() {
 
 // TODO: this should be called and handled internally, periodically
 void GsmClass::_checkConnection() {
-return;
   if (DISABLE_GSM) return;
   Serial.println("Check gsm network connection");
   sendCmd("AT+CREG?");
