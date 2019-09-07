@@ -20,7 +20,7 @@
 #include "appGLALoader.h"
 
 #define TIME_STR_LENGTH 100
-
+#define MAX_MSG_LENGTH 1000
 #define API_VERSION "1.0"    // modules can check API version to make sure they are compatible...
 
 // Global object to store config
@@ -93,7 +93,7 @@ void setup() {
   #endif
 
   WiFi.mode(WIFI_OFF);
-  Serial.begin(9600);
+  Serial.begin(115200);
   delay(100);
   config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
   config->init();
@@ -130,10 +130,12 @@ void setup() {
   stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
   stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
   
-  initGsmMessageHandlers();
-  gsm.setPin(config->getSimPin());
-  gsmEnabled = gsm.init();
-  printNumbers();     
+  if(gsmEnabled = gsm.init()) {
+    gsm.setPin(config->getSimPin());
+    printNumbers();
+    initGsmMessageHandlers();
+    oledDisplay->gsmIcon(true); // blinking icon : not connected    
+  }
   
   wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
   wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected);
@@ -441,7 +443,7 @@ void printNumbers() {
     Serial.print(i);
     Serial.print(" ");
     Serial.print(config->getRegisteredPhone(i)->getNumber());
-    Serial.println(config->getRegisteredPhone(i)->isAdmin()?" true":" false");
+    Serial.println(config->getRegisteredPhone(i)->isAdmin()?" Admin":"");
   }
 }
 
@@ -725,7 +727,36 @@ void wifiDisplay() {
   oledDisplay->wifiIcon(blinkWifi, wifiType);
 }
 
-
+void readSerial() {
+  int incomingChar, length;
+  char message[MAX_MSG_LENGTH + 1];
+  *message = 0;
+ 
+  while(Serial.available()){    
+    incomingChar = Serial.read();
+    if(incomingChar > 0) {
+      // When 'cr' is detected, process received message
+      if(incomingChar == 10) {
+        break;
+      } else {
+        length = strlen(message);
+        if(length < MAX_MSG_LENGTH - 2) {
+          message[length] = incomingChar;
+          message[length + 1] = 0;
+        } else {
+          // Ignore  message
+          message[0] = 0;
+          Serial.println("Serial message too big, ignoring chunk");
+        }        
+      }
+    }
+  }
+  if(strlen(message) > 0) {
+    if(strncmp(message, "gsm:", 4) == 0) {
+      gsm.sendCmd(message + 4);
+    }
+  }
+}
 
 /*********************************
  * Main Loop
@@ -795,6 +826,8 @@ void loop() {
     registerToWebsite();
     homeWifiFirstConnected = false;
   }
+  
+  readSerial();
   delay(20);
   
 }

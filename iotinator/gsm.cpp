@@ -4,18 +4,22 @@
 #include "gsm.h"
 #define MAX_MSG_LENGTH 500
 
-#define CHECK_NETWORK_PERIOD 15000 // 15 seconds
-#define CHECK_TIME_PERIOD 15000    // 15 seconds
-#define CHECK_SMS_PERIOD 15000     // 15 seconds
+#define CHECK_NETWORK_PERIOD 30000 // 15 seconds
 #define RESET_GSM_AFTER 60000 * 2  // Reset GSM after 2 minutes of disconnection (bad CREG response) 
 
-#define TIME_OUT CHECK_NETWORK_PERIOD*3 // X seconds with no answer from SIM800. Needs to be more than check period!
+#define RESET_LOW_DURATION 200 // how long shoud reset be kept = 0: 200 ms
+#define RESET_HIGH_WAIT 2000    // delay after high before gsm init: 2 seconds
 
+#define GSM_CMD_TIMEOUT 4000
 
 // TODO handle a different fifo for gsm commands to store them while connection is not done ??
 GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio) {
   _serialSIM800 = serial;
   _resetGpio = resetGpio;
+  if (!DISABLE_GSM) {
+    _serialSIM800->begin(9600);
+    pinMode(_resetGpio, OUTPUT);
+  }   
 };
 
 void GsmClass::setPin(const char* pin) {
@@ -27,10 +31,33 @@ bool GsmClass::init() {
     Serial.println("GSM disabled.");
     return false;
   }
-  _serialSIM800->begin(9600);
   Serial.println("GSM enabled.");
-  initGsm();
   return true;
+}
+
+void GsmClass::_resetIfNeeded() {
+  if(!_needReset && !_resetting) return;
+  if(_resetting) {
+    if(_resetLowStart != 0 && XUtils::isElapsedDelay(millis(), &_resetLowStart, RESET_LOW_DURATION)) {
+      Serial.println("Setting reset pin: high");
+      digitalWrite(_resetGpio, HIGH); 
+      _resetLowStart = 0;
+      _resetHighStart = millis();   
+    }
+    if(_resetHighStart != 0 && XUtils::isElapsedDelay(millis(), &_resetHighStart, RESET_HIGH_WAIT)) {
+      _resetHighStart = 0;
+      _resetting = false;    
+      Serial.println("Hard reset done");
+      initGsm();
+    }
+  }
+  if(_needReset) {
+    Serial.println("Setting reset pin: low");
+    _resetting = true;
+    _needReset = false;
+    digitalWrite(_resetGpio, LOW);
+    _resetLowStart = millis();   
+  }
 }
 
 void GsmClass::initGsm() {
@@ -38,17 +65,17 @@ void GsmClass::initGsm() {
     return;
   }
   Serial.println("Initializing GSM");
+
   _lastConnectionOk = millis();
-  pinMode(_resetGpio, OUTPUT);   
-  digitalWrite(_resetGpio, LOW);
-  delay(1000);
-  digitalWrite(_resetGpio, HIGH);
-  delay(5000);
   _isInitialized = true;
   sendInitCmd("AT");  // This allows initializing uart on sim board (rate...)
   sendInitCmd("");    // get rid of garbage characters (no command but wait for response) 
-  //sendInitCmd("ATE0");
+  //sendInitCmd("ATE0");  // no echo
   sendPin();
+}
+
+void GsmClass::forceReset() {
+  _needReset = true;
 }
 
 void GsmClass::sendPin() {
@@ -66,6 +93,7 @@ void GsmClass::sendInitCmd(const char* cmd) {
   if (DISABLE_GSM || !_isInitialized) return;
   char* newCmd = (char *)malloc(strlen(cmd) + 1);
   strcpy(newCmd, cmd);
+  Serial.printf("Queueing init cmd %s\n", newCmd);
   _initCmds.push(newCmd);
 }
 
@@ -77,37 +105,36 @@ void GsmClass::sendCmd(const char* cmd) {
   if (DISABLE_GSM || !_isInitialized) return;
   char* newCmd = (char *)malloc(strlen(cmd) + 1);
   strcpy(newCmd, cmd);
+  Serial.printf("Queueing cmd %s\n", newCmd);
   _cmds.push(newCmd);
 }
 
 void GsmClass::refresh() {
-  if (DISABLE_GSM || !_isInitialized) return;
+  if (DISABLE_GSM) return;  
+  _resetIfNeeded();
+  if(!_isInitialized) return; 
+   
   // check gsm serial line for incoming stuff
   readGsm();
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
-  if(XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
+  if(_isConnected && XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
     _checkConnection();
   }
   
   std::queue<char*> *queueToUse = &_cmds;
-  long unsigned int *prevQSizeToUse = &_prevQSize; 
   if (_initCmds.size() > 0) {
     queueToUse = &_initCmds;
-    prevQSizeToUse = &_prevInitQSize; 
   }
-  // if not already waiting for a command result and command queue not empty, send command
-  if(queueToUse->size() != *prevQSizeToUse) {
-    *prevQSizeToUse = queueToUse->size();
-    Serial.print("Queue size: ");
-    Serial.println(*prevQSizeToUse);
-  }
+
   if (!_waitingForCmdResult && !queueToUse->empty()) {
+    Serial.printf("%s queue size: %d\n",  (queueToUse == &_cmds) ? "Standard": "Init", queueToUse->size());
     char* cmd = queueToUse->front();
     Serial.print("GSM cmd: ");
     Serial.println(cmd);
     _serialSIM800->println(cmd);
     _waitingForCmdResult = true;
+    _lastCmdSent = millis();
     queueToUse->pop();
     free(cmd);    
   }
@@ -141,6 +168,7 @@ void GsmClass::sendSMS(char* toNumber, const char* msg) {
 
 void GsmClass::readGsm() {
   if (DISABLE_GSM) return;
+  
   int incomingChar, length;
   char message[MAX_MSG_LENGTH + 1];
   GsmEvents gsmEvent = NONE;
@@ -162,7 +190,7 @@ void GsmClass::readGsm() {
         } else {
           // Ignore  message
           message[0] = 0;
-          Serial.println("Serial message too big");
+          Serial.println("Serial message too big, ignoring chunk");
         }        
       }
     }
@@ -189,12 +217,14 @@ void GsmClass::readGsm() {
         if (strstr(resultValue, "0,5")) {
           gsmEvent = CONNECTION_ROAMING;
           _lastConnectionOk = millis();
+          _isConnected = true;
         } else if (strstr(resultValue, "0,1")) {
           gsmEvent = CONNECTION;
           _lastConnectionOk = millis();
+          _isConnected = true;
         } else {
-          sendPin();
           gsmEvent = DISCONNECTION;
+          _isConnected = false;
         }      
       }
 
@@ -217,7 +247,6 @@ void GsmClass::readGsm() {
       }
     } else {
       if ((strncmp(message, "OK", 2) == 0) || (strncmp(message, ">", 1) == 0)) {
-        _lastAnswer = millis();
         // Ready to send the next command in queue (if any)
         _waitingForCmdResult = false;      
       }
@@ -228,10 +257,10 @@ void GsmClass::readGsm() {
     }
   }
       
-  if (_waitingForCmdResult && (millis() - _lastAnswer > CHECK_NETWORK_PERIOD)) {
+  if (_waitingForCmdResult && (millis() - _lastCmdSent > GSM_CMD_TIMEOUT)) {
     gsmEvent = TIMEOUT;
-    _lastAnswer = millis(); // To not process at each gsmRefresh
-     _waitingForCmdResult = false;      
+    Serial.println("CMD response Timeout");
+    _waitingForCmdResult = false;      
   }
  
   if (gsmEvent != NONE) {      
@@ -253,6 +282,6 @@ void GsmClass::readGsm() {
   }
   // If connection check delay is elapsted, check the connection state
   if(XUtils::isElapsedDelay(millis(), &_lastConnectionOk, RESET_GSM_AFTER)) {
-    initGsm();
+    _needReset = true;
   }    
 }

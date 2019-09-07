@@ -33,9 +33,11 @@ public:
   void setPin(const char* pin);
   void initGsm();
   void sendPin();
+  void forceReset();
 protected:
   void _connectionTimeOutHandler(char *message);
   void _checkConnection();
+  void _resetIfNeeded();
   
   SoftwareSerial* _serialSIM800;
   handlerMap _handlers;  
@@ -55,13 +57,11 @@ protected:
 
   std::queue<char*> _initCmds;
   bool _waitingForCmdResult = false; 
-  unsigned long _lastAnswer = 0;
+  unsigned long _lastCmdSent = 0;
   
-  bool needReset = true;  // when a hard reset is needed
-  bool resetting = false; // while reset is being done 
-  unsigned long resetLowStart = 0;         // date when reset pin was set to 0
-  unsigned long resetLowDuration = 1000;   // how long shoud reset be kept = 0: one second
-  unsigned long resetHighStart = 0;        // date when reset was set high
-  unsigned long resetHighWait = 4000;      // delay after high before gsm init: 4 seconds
+  bool _needReset = true;  // when a hard reset is needed
+  bool _resetting = false; // while reset is being done 
+  unsigned long _resetLowStart = 0;         // date when reset pin was set to 0
+  unsigned long _resetHighStart = 0;        // date when reset was set high
   
 };
