@@ -34,13 +34,12 @@ void smsReceivedHandler(char *message) {
     strcpy(msgId, ptr + 1);     
     Serial.println(msgId);
     sprintf(readCmd, "AT+CMGR=%s", msgId);
+    gsm.sendCmd("AT+CMGF=1");
     gsm.sendCmd(readCmd);
   }   
 }
 
 void smsReadyHandler(char *message) {
-  gsm.sendCmd("AT+CMGF=1");
-  gsm.sendCmd("AT+CSCS=\"GSM\"");
   gsm.sendCmd("AT+CREG?");
 }
 

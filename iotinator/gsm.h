@@ -22,14 +22,17 @@ public:
   GsmClass(SoftwareSerial* serial, int resetGpio);
   
   void initTimeFromNetwork();
-  void checkGsm();
+  void readGsm();
   
   bool init();
   void refresh();
   void sendSMS(char* toNumber, const char* message);
   void setHandler(GsmEvents event, void (*)(char*));
   void sendCmd(const char* cmd);
+  void sendInitCmd(const char* cmd);
   void setPin(const char* pin);
+  void initGsm();
+  void sendPin();
 protected:
   void _connectionTimeOutHandler(char *message);
   void _checkConnection();
@@ -44,7 +47,21 @@ protected:
   bool _isConnected = false;
   bool _timeisValid = false;
   bool _isInitialized = false;
+  unsigned long _lastConnectionOk = 0;
   
   std::queue<char*> _cmds;
-  bool _waitingForCmdResult = false;   
+  unsigned long _prevQSize = 0;
+  unsigned long _prevInitQSize = 0;
+
+  std::queue<char*> _initCmds;
+  bool _waitingForCmdResult = false; 
+  unsigned long _lastAnswer = 0;
+  
+  bool needReset = true;  // when a hard reset is needed
+  bool resetting = false; // while reset is being done 
+  unsigned long resetLowStart = 0;         // date when reset pin was set to 0
+  unsigned long resetLowDuration = 1000;   // how long shoud reset be kept = 0: one second
+  unsigned long resetHighStart = 0;        // date when reset was set high
+  unsigned long resetHighWait = 4000;      // delay after high before gsm init: 4 seconds
+  
 };
