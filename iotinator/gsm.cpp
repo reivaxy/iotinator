@@ -158,6 +158,7 @@ void GsmClass::sendSMS(char* toNumber, const char* msg) {
   Serial.print("Sending SMS to ");
   Serial.println(toNumber);
   char sendToNum[50];
+  sendCmd("AT+CMGF=1");
   sendCmd("AT+CSCS=\"GSM\"");
   sprintf(sendToNum, "AT+CMGS=\"%s\"", toNumber);
   sendCmd(sendToNum);
