@@ -11,7 +11,7 @@
 #undef min  // Because Arduino.h and queue are not compatible otherwise
 #include <queue>
 
-enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, INCOMING_SMS, TIMEOUT, READY_FOR_SMS, READING_SMS};
+enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, INCOMING_SMS, TIMEOUT, READY_FOR_SMS, SMS_READ};
 
 typedef std::multimap <GsmEvents, void (*)(char*)>  handlerMap;
 typedef std::pair <GsmEvents, void (*)(char*)>  handlerPair;
@@ -29,15 +29,17 @@ public:
   void sendSMS(char* toNumber, const char* message);
   void setHandler(GsmEvents event, void (*)(char*));
   void sendCmd(const char* cmd);
+  void sendCmdNoNl(const char* cmd);
   void sendInitCmd(const char* cmd);
   void setPin(const char* pin);
   void initGsm();
   void sendPin();
   void forceReset();
+  void checkConnection();
 protected:
   void _connectionTimeOutHandler(char *message);
-  void _checkConnection();
   void _resetIfNeeded();
+  void _readUntil2CharMsg(char *twoCharMsg);
   
   SoftwareSerial* _serialSIM800;
   handlerMap _handlers;  

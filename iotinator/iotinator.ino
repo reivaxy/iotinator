@@ -447,6 +447,10 @@ void printNumbers() {
   }
 }
 
+void processSMS(char* message, char* phoneNumber, char* date) {
+  gsm.sendSMS(phoneNumber, "Thanks");
+}
+
 // For now, use specific methods to load each app.
 // Later: website could provide a manifest exposing all available apps, and their dependencies,
 // and make this generic.

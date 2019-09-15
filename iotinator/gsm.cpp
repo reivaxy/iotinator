@@ -4,7 +4,7 @@
 #include "gsm.h"
 #define MAX_MSG_LENGTH 500
 
-#define CHECK_NETWORK_PERIOD 30000 // 15 seconds
+#define CHECK_NETWORK_PERIOD 30000 // 30 seconds
 #define RESET_GSM_AFTER 60000 * 2  // Reset GSM after 2 minutes of disconnection (bad CREG response) 
 
 #define RESET_LOW_DURATION 200 // how long shoud reset be kept = 0: 200 ms
@@ -70,7 +70,7 @@ void GsmClass::initGsm() {
   _isInitialized = true;
   sendInitCmd("AT");  // This allows initializing uart on sim board (rate...)
   sendInitCmd("");    // get rid of garbage characters (no command but wait for response) 
-  //sendInitCmd("ATE0");  // no echo
+//  sendInitCmd("ATE0");  // no echo
   sendPin();
 }
 
@@ -103,8 +103,9 @@ void GsmClass::sendInitCmd(const char* cmd) {
  */ 
 void GsmClass::sendCmd(const char* cmd) {
   if (DISABLE_GSM || !_isInitialized) return;
-  char* newCmd = (char *)malloc(strlen(cmd) + 1);
-  strcpy(newCmd, cmd);
+  int size = strlen(cmd) + 1;
+  char* newCmd = (char *)malloc(size);
+  strlcpy(newCmd, cmd, size);
   Serial.printf("Queueing cmd %s\n", newCmd);
   _cmds.push(newCmd);
 }
@@ -114,12 +115,10 @@ void GsmClass::refresh() {
   _resetIfNeeded();
   if(!_isInitialized) return; 
    
-  // check gsm serial line for incoming stuff
-  readGsm();
   unsigned now = millis();
   // If connection check delay is elapsted, check the connection state
   if(_isConnected && XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
-    _checkConnection();
+    checkConnection();
   }
   
   std::queue<char*> *queueToUse = &_cmds;
@@ -130,20 +129,23 @@ void GsmClass::refresh() {
   if (!_waitingForCmdResult && !queueToUse->empty()) {
     Serial.printf("%s queue size: %d\n",  (queueToUse == &_cmds) ? "Standard": "Init", queueToUse->size());
     char* cmd = queueToUse->front();
-    Serial.print("GSM cmd: ");
+    Serial.print("Writing cmd: ");
     Serial.println(cmd);
     _serialSIM800->println(cmd);
     _waitingForCmdResult = true;
     _lastCmdSent = millis();
     queueToUse->pop();
     free(cmd);    
-  }
+  } 
 
+  // check gsm serial line for incoming stuff
+  readGsm();
+  
 }
 
-// TODO: this should be called and handled internally, periodically
-void GsmClass::_checkConnection() {
+void GsmClass::checkConnection() {
   if (DISABLE_GSM) return;
+  if(_initCmds.size() > 0) return;
   Serial.println("Check gsm network connection");
   sendCmd("AT+CREG?");
 }
@@ -154,7 +156,8 @@ void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
 
 void GsmClass::sendSMS(char* toNumber, const char* msg) {
   if (DISABLE_GSM) return;
-  char message[MAX_MSG_LENGTH + 1];
+  
+  char message[MAX_MSG_LENGTH + 3];
   Serial.print("Sending SMS to ");
   Serial.println(toNumber);
   char sendToNum[50];
@@ -162,8 +165,8 @@ void GsmClass::sendSMS(char* toNumber, const char* msg) {
   sendCmd("AT+CSCS=\"GSM\"");
   sprintf(sendToNum, "AT+CMGS=\"%s\"", toNumber);
   sendCmd(sendToNum);
-  strncpy(message, msg, MAX_MSG_LENGTH);
-  strcat(message, "\x1A");
+  strlcpy(message, msg, MAX_MSG_LENGTH + 3);
+  strlcat(message, "\x1A", MAX_MSG_LENGTH + 3);
   sendCmd(message); 
 }
 
@@ -175,7 +178,7 @@ void GsmClass::readGsm() {
   GsmEvents gsmEvent = NONE;
   *message = 0;
   char resultValue[MAX_MSG_LENGTH + 1];
-  resultValue[0] = 0;
+  *resultValue = 0;
   
   while(_serialSIM800->available()){    
     incomingChar = _serialSIM800->read();
@@ -189,27 +192,23 @@ void GsmClass::readGsm() {
           message[length] = incomingChar;
           message[length + 1] = 0;
         } else {
-          // Ignore  message
-          message[0] = 0;
-          Serial.println("Serial message too big, ignoring chunk");
+          Serial.println("Serial message too big, truncating");
+          break;
         }        
       }
     }
   }
   if(strlen(message) > 0) {
-    Serial.print("$");
-    Serial.print(message);
-    Serial.println("$");
+    Serial.printf("$%s$\n", message);
     char resultId[20];
     char *ptr = NULL;
     
     ptr = strstr(message, ": ");
     if (ptr != NULL) {
-      *ptr = 0;
-      strcpy(resultId, message);  // resultId contains the response prefix (like +CMGR" for instance)
+      strlcpy(resultId, message, ptr - message + 1);  // resultId contains the response prefix (like +CMGR" for instance)
       Serial.println(resultId);
       ptr += 2;
-      strcpy(resultValue, ptr);     
+      strlcpy(resultValue, ptr, MAX_MSG_LENGTH + 1);     
       Serial.println(resultValue);
       
       // If message is the result of CREG: connection status
@@ -238,18 +237,70 @@ void GsmClass::readGsm() {
           gsmEvent = DATETIME_OK;
         }     
       }
-      // incoming SMS 
+      // incoming SMS is available to read
       if (strncmp(resultId, "+CMTI", 5) == 0) {
-        gsmEvent = INCOMING_SMS;      
+        char *ptr = strstr(resultValue, ",");
+        if (ptr != NULL) {
+          char msgId[10];
+          char readCmd[50];        
+          char delCmd[50];        
+          strlcpy(msgId, ptr + 1, 10);     
+          Serial.print("Reading incoming SMS ");
+          Serial.println(msgId);
+          sprintf(readCmd, "AT+CMGR=%s", msgId);
+          sendCmd("AT+CMGF=1");
+          sendCmd("AT+CSCS=\"GSM\"");
+          sendCmd(readCmd);
+          sprintf(delCmd, "AT+CMGD=%s,0", msgId);
+          sendCmd(delCmd);
+        }
+        gsmEvent = INCOMING_SMS;       
       }
       // response to read message command: need to read incoming message until empty line and then 'OK' alone on a line
       if (strncmp(resultId, "+CMGR", 5) == 0) {
-        gsmEvent = READING_SMS;      
+        Serial.println("Received SMS");
+        // In test mode (CMGF=1) messages are followed by a CR LF only line, and then an "OK" line.
+        // Empty lines sent within the message are just LF
+        // Read the message: read characters until first CR LF only line.
+        int previousChar = 0;
+        strcat(resultValue, "\n");
+        while(_serialSIM800->available()) {    
+          incomingChar = _serialSIM800->read();
+//          Serial.println(incomingChar);
+          if(incomingChar > 0) {
+            // did we get an empty line ? current char is CR and previous was LF ?            
+            if(incomingChar == 13) {
+              if(previousChar == 10) {
+                resultValue[strlen(resultValue) - 1] = 0;  // remove LF
+                break;
+              }
+            }
+            length = strlen(resultValue);
+            if(length < MAX_MSG_LENGTH - 2) {
+              resultValue[length] = incomingChar;
+              resultValue[length + 1] = 0;
+              previousChar = incomingChar;
+            } else {
+              // Ignore rest of message
+              Serial.println("Serial message too big, truncating");
+              break;
+            }        
+
+          }
+        }             
+        _readUntil2CharMsg("OK");
+        _readUntil2CharMsg("\r\n");
+        _waitingForCmdResult = false;
+        gsmEvent = SMS_READ;
+        Serial.println(resultValue);    
+        Serial.println("Not waiting");    
+    
       }
     } else {
       if ((strncmp(message, "OK", 2) == 0) || (strncmp(message, ">", 1) == 0)) {
         // Ready to send the next command in queue (if any)
-        _waitingForCmdResult = false;      
+        _waitingForCmdResult = false;
+        Serial.println("Not waiting");    
       }
       // Message sent by SIM800 when ready for SMS (not a specific command response)
       if (strncmp(message, "SMS Ready", 9) == 0) {
@@ -260,7 +311,7 @@ void GsmClass::readGsm() {
       
   if (_waitingForCmdResult && (millis() - _lastCmdSent > GSM_CMD_TIMEOUT)) {
     gsmEvent = TIMEOUT;
-    Serial.println("CMD response Timeout");
+    Serial.println("GSM cmd response Timeout");
     _waitingForCmdResult = false;      
   }
  
@@ -269,14 +320,14 @@ void GsmClass::readGsm() {
     range = _handlers.equal_range(gsmEvent); // get iterators on entries with key value gsmEvent
     bool found = false;  
     for(handlerMap::iterator it = range.first; it != range.second; ++it) {
-      Serial.print("Found handler for ");
+      Serial.print("Found gsm handler for ");
       Serial.println(gsmEvent);
       it->second(resultValue);
       found = true;
     }
 
     if (!found) {
-      Serial.print("Unhandled event: ");
+      Serial.print("Unhandled gsm event: ");
       Serial.println(gsmEvent);
 
     }
@@ -285,4 +336,17 @@ void GsmClass::readGsm() {
   if(XUtils::isElapsedDelay(millis(), &_lastConnectionOk, RESET_GSM_AFTER)) {
     _needReset = true;
   }    
+}
+
+void GsmClass::_readUntil2CharMsg(char *twoCharMsg) {
+  int incomingChar = 0;
+  int previousChar = 0;
+  while(_serialSIM800->available()) {    
+    incomingChar = _serialSIM800->read();
+//    Serial.println(incomingChar);
+    if(incomingChar == twoCharMsg[1] && previousChar == twoCharMsg[0]) {
+      break;
+    }
+    previousChar = incomingChar;
+  }       
 }
