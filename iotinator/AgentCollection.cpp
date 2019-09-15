@@ -145,6 +145,25 @@ void AgentCollection::list(JsonObject& root, int* customSize) {
   }
 }
 
+char* AgentCollection::list() {
+  int size = getCount();
+  Debug("AgentCollection::list %d agents\n", size);
+  if(size == 0) {
+    return NULL;  
+  }
+  int resultSize = size * (NAME_MAX_LENGTH + 10) + 1;
+  char *result = (char *) malloc(resultSize);
+  *result = 0;
+  
+  int count = 1;  
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
+    char oneModule[NAME_MAX_LENGTH + 10];
+    sprintf(oneModule, "%d: %s\n", count++, it->second->getName());
+    strlcat(result, oneModule, resultSize);
+  }
+  return result;
+}
+
 void AgentCollection::reset() {
   int size = getCount();
   const char *ip, *name; 

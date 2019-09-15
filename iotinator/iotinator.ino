@@ -449,7 +449,17 @@ void printNumbers() {
 }
 
 void processSMS(char* message, char* phoneNumber, char* date) {
-  gsm.sendSMS(ADMIN_NUMBER, message);
+  // gsm.sendSMS(ADMIN_NUMBER, message);
+  Serial.printf("Processing message $%s$\n", message);
+  if(strncasecmp(message, "list", 4) == 0) {
+    char* list = agentCollection->list();
+    if(list != NULL) {
+      gsm.sendSMS(phoneNumber, list);
+      free(list);
+    } else {
+      gsm.sendSMS(phoneNumber, "No module");
+    }
+  }
 }
 
 // For now, use specific methods to load each app.
