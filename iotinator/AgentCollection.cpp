@@ -176,7 +176,7 @@ char* AgentCollection::list() {
       }     
     }
     char oneModule[size];
-    sprintf(oneModule, "%s ", count++, it->second->getName());
+    sprintf(oneModule, "%s ", it->second->getName());
     if(status != NULL) {   
       strlcat(oneModule, ": ", resultSize);    
       strlcat(oneModule, status, resultSize);    
