@@ -28,6 +28,7 @@ MasterConfigClass *config;
 
 DisplayClass *oledDisplay;
 
+#include "iotinatorSecrets.h"
 #include "gsm.h"
 // SIM800 TX is connected to RX MCU 13 (D7)
 #define SIM800_TX_PIN 13
@@ -448,7 +449,7 @@ void printNumbers() {
 }
 
 void processSMS(char* message, char* phoneNumber, char* date) {
-  gsm.sendSMS(phoneNumber, "Thanks");
+  gsm.sendSMS(ADMIN_NUMBER, message);
 }
 
 // For now, use specific methods to load each app.

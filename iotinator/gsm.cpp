@@ -2,10 +2,11 @@
 #include <string>
 #include <Arduino.h>
 #include "gsm.h"
-#define MAX_MSG_LENGTH 500
 
 #define CHECK_NETWORK_PERIOD 30000 // 30 seconds
 #define RESET_GSM_AFTER 60000 * 2  // Reset GSM after 2 minutes of disconnection (bad CREG response) 
+
+#define SEND_INTERVAL_DELAY 150  // Delay after sending a command to SIM800 (solves lag when sending message after reading one)
 
 #define RESET_LOW_DURATION 200 // how long shoud reset be kept = 0: 200 ms
 #define RESET_HIGH_WAIT 2000    // delay after high before gsm init: 2 seconds
@@ -68,9 +69,10 @@ void GsmClass::initGsm() {
 
   _lastConnectionOk = millis();
   _isInitialized = true;
+  *_smsToProcess = 0;
   sendInitCmd("AT");  // This allows initializing uart on sim board (rate...)
   sendInitCmd("");    // get rid of garbage characters (no command but wait for response) 
-//  sendInitCmd("ATE0");  // no echo
+  sendInitCmd("ATE0");  // no echo
   sendPin();
 }
 
@@ -116,6 +118,19 @@ void GsmClass::refresh() {
   if(!_isInitialized) return; 
    
   unsigned now = millis();
+  
+  if(*_smsToProcess != 0) {
+      // delete read messages 
+      sendCmd("AT+CMGD=1,1");
+      std::pair<handlerMap::iterator, handlerMap::iterator> range;
+      range = _handlers.equal_range(SMS_READ); // get iterators on entries with key value gsmEvent
+      bool found = false;  
+      for(handlerMap::iterator it = range.first; it != range.second; ++it) {
+        it->second(_smsToProcess);
+      }
+      *_smsToProcess = 0;
+  }
+        
   // If connection check delay is elapsted, check the connection state
   if(_isConnected && XUtils::isElapsedDelay(now, &_lastCheckConnection, CHECK_NETWORK_PERIOD)) {
     checkConnection();
@@ -126,7 +141,7 @@ void GsmClass::refresh() {
     queueToUse = &_initCmds;
   }
 
-  if (!_waitingForCmdResult && !queueToUse->empty()) {
+  if (!_waitingForCmdResult && !queueToUse->empty() && XUtils::isElapsedDelay(now, &_lastWriteCommand, SEND_INTERVAL_DELAY)) {
     Serial.printf("%s queue size: %d\n",  (queueToUse == &_cmds) ? "Standard": "Init", queueToUse->size());
     char* cmd = queueToUse->front();
     Serial.print("Writing cmd: ");
@@ -135,7 +150,8 @@ void GsmClass::refresh() {
     _waitingForCmdResult = true;
     _lastCmdSent = millis();
     queueToUse->pop();
-    free(cmd);    
+    free(cmd);
+    _lastWriteCommand = millis(); 
   } 
 
   // check gsm serial line for incoming stuff
@@ -251,8 +267,6 @@ void GsmClass::readGsm() {
           sendCmd("AT+CMGF=1");
           sendCmd("AT+CSCS=\"GSM\"");
           sendCmd(readCmd);
-          sprintf(delCmd, "AT+CMGD=%s,0", msgId);
-          sendCmd(delCmd);
         }
         gsmEvent = INCOMING_SMS;       
       }
@@ -264,9 +278,10 @@ void GsmClass::readGsm() {
         // Read the message: read characters until first CR LF only line.
         int previousChar = 0;
         strcat(resultValue, "\n");
-        while(_serialSIM800->available()) {    
+        unsigned long timeOut = millis();
+        
+        while(true && !XUtils::isElapsedDelay(millis(), &timeOut, 2000)) {    
           incomingChar = _serialSIM800->read();
-//          Serial.println(incomingChar);
           if(incomingChar > 0) {
             // did we get an empty line ? current char is CR and previous was LF ?            
             if(incomingChar == 13) {
@@ -315,22 +330,27 @@ void GsmClass::readGsm() {
     _waitingForCmdResult = false;      
   }
  
-  if (gsmEvent != NONE) {      
-    std::pair<handlerMap::iterator, handlerMap::iterator> range;
-    range = _handlers.equal_range(gsmEvent); // get iterators on entries with key value gsmEvent
-    bool found = false;  
-    for(handlerMap::iterator it = range.first; it != range.second; ++it) {
-      Serial.print("Found gsm handler for ");
-      Serial.println(gsmEvent);
-      it->second(resultValue);
-      found = true;
-    }
-
-    if (!found) {
-      Serial.print("Unhandled gsm event: ");
-      Serial.println(gsmEvent);
-
-    }
+  if (gsmEvent != NONE) {
+    // processing incoming SMS (sending another one) here sometime crashes... Couldn't explain it for now, so 
+    // this is a work around: process it at next refresh call.
+    if(SMS_READ == gsmEvent) {
+      strlcpy(_smsToProcess, resultValue, MAX_MSG_LENGTH + 1);
+    } else {
+      std::pair<handlerMap::iterator, handlerMap::iterator> range;
+      range = _handlers.equal_range(gsmEvent); // get iterators on entries with key value gsmEvent
+      bool found = false;  
+      for(handlerMap::iterator it = range.first; it != range.second; ++it) {
+        Serial.print("Found gsm handler for ");
+        Serial.println(gsmEvent);
+        it->second(resultValue);
+        found = true;
+      }
+  
+      if (!found) {
+        Serial.print("Unhandled gsm event: ");
+        Serial.println(gsmEvent);
+      }
+    }      
   }
   // If connection check delay is elapsted, check the connection state
   if(XUtils::isElapsedDelay(millis(), &_lastConnectionOk, RESET_GSM_AFTER)) {

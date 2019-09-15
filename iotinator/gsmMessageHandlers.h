@@ -32,32 +32,38 @@ void clockLostHandler(char *message) {
 // message has a first header line, then text of message:
 // message text is here (possibly multi line)
 void smsReceivedHandler(char *fullMessage) {
-
-  return;
-  char firstLine[MAX_MSG_LENGTH + 1];
-  char message[MAX_MSG_LENGTH + 1];
-  char phoneNumber[MAX_MSG_LENGTH + 1];
-  char date[MAX_MSG_LENGTH + 1];
+  int size = MAX_MSG_LENGTH + 1;
+  char firstLine[size];
+  char message[size];
+  char number[size];
+  char date[size];
   char* eol = strstr(fullMessage, "\r\n");
-  strlcpy(firstLine, fullMessage, eol - fullMessage + 1);  
+  // TODO check eol
+  
+  *eol = 0;
+  strlcpy(firstLine, fullMessage, size);  
   Serial.println("got");
   Serial.println(firstLine);
-  strlcpy(message, (const char *)(eol + 2), MAX_MSG_LENGTH + 1);
+  strlcpy(message, (const char *)(eol + 2), size);
   Serial.println(message);
- 
+
   char* sep = "\",\"";
   char* start = strstr(firstLine, sep) + strlen(sep);
   char* end = strstr(start, sep);
-  *end = 0;  
-  strcpy(phoneNumber, start);
+  // TODO: check end
+  
+  *end = 0; 
+  Serial.printf("Start: $%s$, %d\n", start, strlen(start));
+  Serial.printf("End: $%s$\n", end);
+ 
+  strlcpy(number, start, size);
+  Serial.printf("Number: $%s$\n", number);
   start = end + 2*strlen(sep); // empty field
-  strcpy(date, start);
+  strlcpy(date, start, size);
   date[strlen(date) - 1] = 0; // remove last double quote
-  Serial.println(phoneNumber);
+  Serial.println(number);
   Serial.println(date);
-
-//  processSMS(message, phoneNumber, date);
-
+  processSMS(message, number, date);
 }
 
 void smsReadyHandler(char *message) {

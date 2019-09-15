@@ -11,6 +11,8 @@
 #undef min  // Because Arduino.h and queue are not compatible otherwise
 #include <queue>
 
+#define MAX_MSG_LENGTH 500
+
 enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, INCOMING_SMS, TIMEOUT, READY_FOR_SMS, SMS_READ};
 
 typedef std::multimap <GsmEvents, void (*)(char*)>  handlerMap;
@@ -65,5 +67,6 @@ protected:
   bool _resetting = false; // while reset is being done 
   unsigned long _resetLowStart = 0;         // date when reset pin was set to 0
   unsigned long _resetHighStart = 0;        // date when reset was set high
-  
+  unsigned long _lastWriteCommand = 0;        // date when last command was sent to sim800
+  char _smsToProcess[MAX_MSG_LENGTH + 1];
 };
