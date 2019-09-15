@@ -151,15 +151,41 @@ char* AgentCollection::list() {
   if(size == 0) {
     return NULL;  
   }
-  int resultSize = size * (NAME_MAX_LENGTH + 10) + 1;
+  int resultSize = size * (NAME_MAX_LENGTH + 50) + 1;     // 50 for status length... TODO: improve, this is crappy
   char *result = (char *) malloc(resultSize);
   *result = 0;
   
   int count = 1;  
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
-    char oneModule[NAME_MAX_LENGTH + 10];
-    sprintf(oneModule, "%d: %s\n", count++, it->second->getName());
+    int size = NAME_MAX_LENGTH + 10;
+    char *customStr = strdup((char *)it->second->getCustom());
+    const char *status = NULL;
+    
+    if(customStr != NULL) {    
+      DynamicJsonBuffer jsonBuffer(strlen(customStr) * 2);  // Shouldn't be big, strings are referenced, not copied 
+      JsonObject& root = jsonBuffer.parseObject(customStr);
+           
+      if (!root.success()) {
+        Serial.println("Custom payload parse failure for:");
+        Serial.println(customStr);
+        return NULL;
+      }
+      status = (const char*)root["status"];
+      if(status != NULL) {
+        size += strlen(status);
+      }     
+    }
+    char oneModule[size];
+    sprintf(oneModule, "%s ", count++, it->second->getName());
+    if(status != NULL) {   
+      strlcat(oneModule, ": ", resultSize);    
+      strlcat(oneModule, status, resultSize);    
+      strlcat(oneModule, "\n", resultSize);    
+    }
     strlcat(result, oneModule, resultSize);
+    if(customStr != NULL) {
+      free(customStr);    
+    }
   }
   return result;
 }
