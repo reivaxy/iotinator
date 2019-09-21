@@ -449,10 +449,8 @@ void printNumbers() {
 }
 
 void processSMS(char* message, char* phoneNumber, char* date) {
-//   gsm.sendSMS(ADMIN_NUMBER, message);
-//   return;
   Serial.printf("Processing message $%s$\n", message);
-  if(strncasecmp(message, "list", 4) == 0) {
+  if(strncasecmp("list", message, 4) == 0) {
     char* list = agentCollection->list();
     if(list != NULL) {
       gsm.sendSMS(phoneNumber, list);
@@ -460,25 +458,25 @@ void processSMS(char* message, char* phoneNumber, char* date) {
     } else {
       gsm.sendSMS(phoneNumber, "No module");
     }
-    return;
-  }
-  char* sep = strchr(message, ':');
-  if(sep != NULL) {
-    *sep = 0;
-    Agent* agent = agentCollection->getByName(message);
-    if(agent != NULL) {
-      int httpCode = 200;
-      const char* target = agent->getIP();
-      Serial.printf("Forwarding SMS message to %s (%s)\n",message, target);
-      // TODO send message and isAdmin flag
-      char payload[1000];
-      sprintf(payload, "{\"message\":\"%s\",\"phoneNumber\":\"%s\",\"isAdmin\":%s}", ++ sep, phoneNumber, "true");   // TODO: handle isAdmin
-      Serial.println(payload);
-      // Will return the full payload to update the agent 
-      module->APIPost(target, "/api/sms", payload, &httpCode, payload, 1000);  
-      Serial.printf("Response HTTP %d, %s\n", httpCode, payload);
-      if (httpCode == 200) {
-        agentCollection->refresh(payload);
+  } else {
+    char* sep = strchr(message, ':');
+    if(sep != NULL) {
+      *sep = 0;
+      Agent* agent = agentCollection->getByName(message);
+      if(agent != NULL) {
+        int httpCode = 200;
+        const char* target = agent->getIP();
+        Serial.printf("Forwarding SMS message to %s (%s)\n",message, target);
+        // TODO send message and isAdmin flag
+        char payload[1000];
+        sprintf(payload, "{\"message\":\"%s\",\"phoneNumber\":\"%s\",\"isAdmin\":%s}", ++ sep, phoneNumber, "true");   // TODO: handle isAdmin
+        Serial.println(payload);
+        // Will return the full payload to update the agent 
+        module->APIPost(target, "/api/sms", payload, &httpCode, payload, 1000);  
+        Serial.printf("Response HTTP %d, %s\n", httpCode, payload);
+        if (httpCode == 200) {
+          agentCollection->refresh(payload);
+        }
       }
     }
   }

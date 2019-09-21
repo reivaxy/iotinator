@@ -120,7 +120,7 @@ void GsmClass::refresh() {
       // delete read messages 
       sendCmd("AT+CMGD=1,1");
       std::pair<handlerMap::iterator, handlerMap::iterator> range;
-      range = _handlers.equal_range(SMS_READ); // get iterators on entries with key value gsmEvent
+      range = _handlers.equal_range(SMS_READ); // get iterators on entries with key value gsmEvent SMS_READ
       for(handlerMap::iterator it = range.first; it != range.second; ++it) {
         it->second(_smsToProcess);
       }
@@ -168,6 +168,7 @@ void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
 }
 
 void GsmClass::sendSMS(char* toNumber, const char* msg) {
+// TODO check msg lenght to warn if too big
   Debug("GsmClass::sendSMS\n");
   if (DISABLE_GSM) return;
   
@@ -273,18 +274,19 @@ void GsmClass::readGsm() {
       if (strncmp(resultId, "+CMGR", 5) == 0) {
         Serial.println("Received SMS");
         // In test mode (CMGF=1) messages are followed by a CR LF only line, and then an "OK" line.
-        // Empty lines sent within the message are just LF
-        // Read the message: read characters until first CR LF only line.
+        // Empty lines sent within the message are just LF (10)
+        // Read the message: read characters until first CR LF only line.  (13 10)
         int previousChar = 0;
         strcat(resultValue, "\n");
         unsigned long timeOut = millis();
         
         while(true && !XUtils::isElapsedDelay(millis(), &timeOut, 2000)) {    
           incomingChar = _serialSIM800->read();
+//          Serial.printf("%d\n", incomingChar);
           if(incomingChar > 0) {
-            // did we get an empty line ? current char is CR and previous was LF ?            
-            if(incomingChar == 13) {
-              if(previousChar == 10) {
+            // did we get an empty line ? current char is LF and previous was CR ?            
+            if(incomingChar == 10) {
+              if(previousChar == 13) {
                 resultValue[strlen(resultValue) - 1] = 0;  // remove LF
                 break;
               }

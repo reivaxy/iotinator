@@ -35,9 +35,9 @@ void smsReceivedHandler(char *fullMessage) {
   char * copie = strdup(fullMessage);
   int size = MAX_MSG_LENGTH + 1;
   char firstLine[size];
-  char message[size];
-  char number[size];
-  char date[size];
+  char *message;
+  char number[30];   // could actually just be a pointer in the input string
+  char date[40];     // could actually just be a pointer in the input string
   char* eol = strstr(copie, "\r\n");
   // TODO check eol
   
@@ -45,7 +45,7 @@ void smsReceivedHandler(char *fullMessage) {
   strlcpy(firstLine, copie, size);  
   Serial.println("got");
   Serial.println(firstLine);
-  strlcpy(message, (const char *)(eol + 2), size);
+  message = (char *)(eol + 2);
   Serial.println(message);
 
   char* sep = "\",\"";
@@ -59,11 +59,12 @@ void smsReceivedHandler(char *fullMessage) {
  
   strlcpy(number, start, size);
   Serial.printf("Number: $%s$\n", number);
-  start = end + 2*strlen(sep); // empty field
+  start = end + 2*strlen(sep); // empty field (would not be empty if number in sim card contact book)
   strlcpy(date, start, size);
   date[strlen(date) - 1] = 0; // remove last double quote
   Serial.println(number);
   Serial.println(date);
+  //gsm.sendSMS(number, message);
   processSMS(message, number, date);
   free(copie);
 }
