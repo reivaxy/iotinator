@@ -3,13 +3,13 @@
 #include <Arduino.h>
 #include "gsm.h"
 
-#define CHECK_NETWORK_PERIOD 30000 // 30 seconds
-#define RESET_GSM_AFTER 60000 * 2  // Reset GSM after 2 minutes of disconnection (bad CREG response) 
+#define CHECK_NETWORK_PERIOD 30000 // in ms
+#define RESET_GSM_AFTER 60000 * 2  // Reset GSM after x ms of disconnection (bad CREG response) 
 
 #define SEND_INTERVAL_DELAY 150  // Delay after sending a command to SIM800 (solves lag when sending message after reading one)
 
-#define RESET_LOW_DURATION 200 // how long shoud reset be kept = 0: 200 ms
-#define RESET_HIGH_WAIT 2000    // delay after high before gsm init: 2 seconds
+#define RESET_LOW_DURATION 2000 // how long should SIM800 reset pin be kept low, in ms
+#define RESET_HIGH_WAIT 2000    // delay after high before gsm init in ms
 
 #define GSM_CMD_TIMEOUT 4000
 
@@ -40,7 +40,7 @@ void GsmClass::_resetIfNeeded() {
   if(!_needReset && !_resetting) return;
   if(_resetting) {
     if(_resetLowStart != 0 && XUtils::isElapsedDelay(millis(), &_resetLowStart, RESET_LOW_DURATION)) {
-      Serial.println("Setting reset pin: high");
+      Debug("Setting gsm reset pin: high\n");
       digitalWrite(_resetGpio, HIGH); 
       _resetLowStart = 0;
       _resetHighStart = millis();   
@@ -48,12 +48,12 @@ void GsmClass::_resetIfNeeded() {
     if(_resetHighStart != 0 && XUtils::isElapsedDelay(millis(), &_resetHighStart, RESET_HIGH_WAIT)) {
       _resetHighStart = 0;
       _resetting = false;    
-      Serial.println("Hard reset done");
+      Debug("GSM hard reset done\n");
       initGsm();
     }
   }
   if(_needReset) {
-    Serial.println("Setting reset pin: low");
+    Debug("Setting gsm reset pin: low\n");
     _resetting = true;
     _needReset = false;
     digitalWrite(_resetGpio, LOW);
@@ -70,8 +70,8 @@ void GsmClass::initGsm() {
   _lastConnectionOk = millis();
   _isInitialized = true;
   *_smsToProcess = 0;
-  sendInitCmd("AT");  // This allows initializing uart on sim board (rate...)
-  sendInitCmd("");    // get rid of garbage characters (no command but wait for response) 
+  sendInitCmd("AT");  // This allows initializing uart parameters on sim board (rate...)
+  sendInitCmd("AT");    // get rid of garbage characters (wait for response) 
   sendInitCmd("ATE0");  // no echo
   sendPin();
 }
@@ -93,9 +93,8 @@ void GsmClass::sendPin() {
  */ 
 void GsmClass::sendInitCmd(const char* cmd) {
   if (DISABLE_GSM || !_isInitialized) return;
-  char* newCmd = (char *)malloc(strlen(cmd) + 1);
-  strcpy(newCmd, cmd);
-  Serial.printf("Queueing init cmd %s\n", newCmd);
+  char* newCmd = strdup(cmd);
+  Debug("Queueing init cmd %s\n", newCmd);
   _initCmds.push(newCmd);
 }
 
@@ -105,10 +104,8 @@ void GsmClass::sendInitCmd(const char* cmd) {
  */ 
 void GsmClass::sendCmd(const char* cmd) {
   if (DISABLE_GSM || !_isInitialized) return;
-  int size = strlen(cmd) + 1;
-  char* newCmd = (char *)malloc(size);
-  strlcpy(newCmd, cmd, size);
-  Serial.printf("Queueing cmd %s\n", newCmd);
+  char* newCmd = strdup(cmd);
+  Debug("Queueing cmd %s\n", newCmd);
   _cmds.push(newCmd);
 }
 
@@ -124,11 +121,11 @@ void GsmClass::refresh() {
       sendCmd("AT+CMGD=1,1");
       std::pair<handlerMap::iterator, handlerMap::iterator> range;
       range = _handlers.equal_range(SMS_READ); // get iterators on entries with key value gsmEvent
-      bool found = false;  
       for(handlerMap::iterator it = range.first; it != range.second; ++it) {
         it->second(_smsToProcess);
       }
       *_smsToProcess = 0;
+      return; // just one at a time
   }
         
   // If connection check delay is elapsted, check the connection state
@@ -142,10 +139,9 @@ void GsmClass::refresh() {
   }
 
   if (!_waitingForCmdResult && !queueToUse->empty() && XUtils::isElapsedDelay(now, &_lastWriteCommand, SEND_INTERVAL_DELAY)) {
-    Serial.printf("%s queue size: %d\n",  (queueToUse == &_cmds) ? "Standard": "Init", queueToUse->size());
+    Debug("%s queue size: %d\n",  (queueToUse == &_cmds) ? "Standard": "Init", queueToUse->size());
     char* cmd = queueToUse->front();
-    Serial.print("Writing cmd: ");
-    Serial.println(cmd);
+    Debug("Writing cmd: %s\n", cmd);
     _serialSIM800->println(cmd);
     _waitingForCmdResult = true;
     _lastCmdSent = millis();
@@ -160,9 +156,10 @@ void GsmClass::refresh() {
 }
 
 void GsmClass::checkConnection() {
+  Debug("GsmClass::checkConnection\n");
   if (DISABLE_GSM) return;
   if(_initCmds.size() > 0) return;
-  Serial.println("Check gsm network connection");
+  Debug("Check gsm network connection\n");
   sendCmd("AT+CREG?");
 }
 void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
@@ -171,6 +168,7 @@ void GsmClass::setHandler(GsmEvents event, void (*handler)(char*)) {
 }
 
 void GsmClass::sendSMS(char* toNumber, const char* msg) {
+  Debug("GsmClass::sendSMS\n");
   if (DISABLE_GSM) return;
   
   char message[MAX_MSG_LENGTH + 3];
@@ -187,6 +185,7 @@ void GsmClass::sendSMS(char* toNumber, const char* msg) {
 }
 
 void GsmClass::readGsm() {
+  //Debug("GsmClass::readGsm\n");
   if (DISABLE_GSM) return;
   
   int incomingChar, length;
@@ -215,17 +214,17 @@ void GsmClass::readGsm() {
     }
   }
   if(strlen(message) > 0) {
-    Serial.printf("$%s$\n", message);
+    Debug("$%s$\n", message);
     char resultId[20];
     char *ptr = NULL;
     
     ptr = strstr(message, ": ");
     if (ptr != NULL) {
       strlcpy(resultId, message, ptr - message + 1);  // resultId contains the response prefix (like +CMGR" for instance)
-      Serial.println(resultId);
+      Debug("%s\n", resultId);
       ptr += 2;
       strlcpy(resultValue, ptr, MAX_MSG_LENGTH + 1);     
-      Serial.println(resultValue);
+      Debug("%s\n", resultValue);
       
       // If message is the result of CREG: connection status
       

@@ -50,6 +50,8 @@ public:
   void setLastPing(time_t);
   void setCustom(const char*);
   const char* getCustom();
+  const char* getGlobalStatus();
+  void setGlobalStatus(const char*);
   void renameTo(const char* newName);
   
 protected:   
@@ -59,6 +61,7 @@ protected:
   char _ip[DOUBLE_IP_MAX_LENGTH + 1]; // for modules connected to a agent's AP, store 2 ips and separator
   char _name[NAME_MAX_LENGTH + 1];
   char _uiClassName[UI_CLASS_NAME_MAX_LENGTH + 1];
+  char _globalStatus[MAX_GLOBAL_STATUS_SIZE + 1];
   int8_t _connected = 1;  // New agent is created upon registration, so ping is true of course
   bool _toRename = false; // if true, module must be renamed 
   bool _canSleep = false; // if true, module must not be pinged 

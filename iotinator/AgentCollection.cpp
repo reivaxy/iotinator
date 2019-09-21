@@ -41,6 +41,7 @@ Agent* AgentCollection::refresh(char* jsonStr) {
   Agent *agent = it->second;
   _module->getDisplay()->setLine(2, agent->getName(), TRANSIENT, NOT_BLINKING);
   agent->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  agent->setGlobalStatus((const char*)root[XIOTModuleJsonTag::globalStatus]);
   return agent; // ptr to agent in collection, safe to return.
 }
 
@@ -77,6 +78,7 @@ Agent* AgentCollection::add(char* jsonStr) {
   // We need to update some fields...  
   agent->setCanSleep((bool)root[XIOTModuleJsonTag::canSleep]);
   agent->setCustom((const char*)root[XIOTModuleJsonTag::custom]);
+  agent->setGlobalStatus((const char*)root[XIOTModuleJsonTag::globalStatus]);
   agent->setUiClassName((const char*)root[XIOTModuleJsonTag::uiClassName]);
   agent->setHeap((int32_t)root[XIOTModuleJsonTag::heap]);
   agent->setPingPeriod((int)root[XIOTModuleJsonTag::pingPeriod]);  // Will set it to 0 if absent
@@ -112,6 +114,7 @@ void AgentCollection::_refreshListBufferSize() {
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::MAC, MAC_ADDR_MAX_LENGTH + 3);
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::name, NAME_MAX_LENGTH + 3);
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::ip, DOUBLE_IP_MAX_LENGTH + 3);
+  _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::globalStatus, MAX_GLOBAL_STATUS_SIZE + 3);
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::canSleep, 5 + 3);  // "true" or "false"
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::connected, 3 + 1); // 1, 0 or -1
   _listBufferSize += _jsonAttributeSize(moduleCount, XIOTModuleJsonTag::pingPeriod, 6 + 1);
@@ -136,6 +139,7 @@ void AgentCollection::list(JsonObject& root, int* customSize) {
     agent[XIOTModuleJsonTag::uiClassName] = it->second->getUiClassName();
     agent[XIOTModuleJsonTag::heap] = it->second->getHeap();
     agent[XIOTModuleJsonTag::pingPeriod] = it->second->getPingPeriod();
+    agent[XIOTModuleJsonTag::globalStatus] = it->second->getGlobalStatus();
     char *custom = (char *)it->second->getCustom();
     if(custom != NULL) {
       agent[XIOTModuleJsonTag::custom] = custom;
@@ -146,48 +150,38 @@ void AgentCollection::list(JsonObject& root, int* customSize) {
 }
 
 char* AgentCollection::list() {
-  int size = getCount();
-  Debug("AgentCollection::list %d agents\n", size);
-  if(size == 0) {
+  int count = getCount();
+  Debug("AgentCollection::list %d agents\n", count);
+  if(count == 0) {
     return NULL;  
   }
-  int resultSize = size * (NAME_MAX_LENGTH + 50) + 1;     // 50 for status length... TODO: improve, this is crappy
+  int sizeOneModule = NAME_MAX_LENGTH + MAX_GLOBAL_STATUS_SIZE + 5; //semi colon, space, CRLF, null
+  int resultSize = count * sizeOneModule;
   char *result = (char *) malloc(resultSize);
   *result = 0;
   
-  int count = 1;  
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
-    int size = NAME_MAX_LENGTH + 10;
-    char *customStr = strdup((char *)it->second->getCustom());
-    const char *status = NULL;
-    
-    if(customStr != NULL) {    
-      DynamicJsonBuffer jsonBuffer(strlen(customStr) * 2);  // Shouldn't be big, strings are referenced, not copied 
-      JsonObject& root = jsonBuffer.parseObject(customStr);
-           
-      if (!root.success()) {
-        Serial.println("Custom payload parse failure for:");
-        Serial.println(customStr);
-        return NULL;
-      }
-      status = (const char*)root["status"];
-      if(status != NULL) {
-        size += strlen(status);
-      }     
-    }
-    char oneModule[size];
-    sprintf(oneModule, "%s ", it->second->getName());
-    if(status != NULL) {   
-      strlcat(oneModule, ": ", resultSize);    
-      strlcat(oneModule, status, resultSize);    
-      strlcat(oneModule, "\n", resultSize);    
-    }
+    char oneModule[sizeOneModule];
+    sprintf(oneModule, "%s: %s\n", it->second->getName(), it->second->getGlobalStatus());
     strlcat(result, oneModule, resultSize);
-    if(customStr != NULL) {
-      free(customStr);    
-    }
   }
   return result;
+}
+
+Agent* AgentCollection::getByName(const char* name) {
+  int size = getCount();
+  Debug("AgentCollection::getByName %s\n", name);
+  if(size == 0) {
+    return NULL;  
+  }  
+  for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
+    if(strcasecmp(it->second->getName(), name) == 0) {
+      Debug("Found agent");
+      return  it->second;
+    }
+  }
+  Debug("Didn't find agent");
+  return NULL;
 }
 
 void AgentCollection::reset() {
@@ -262,11 +256,11 @@ void AgentCollection::autoRename(Agent *agent) {
 }
 
 /**
- * check if a name exists in the collection on a different mac
+ * check if a name exists (case insensitively) in the collection on a different mac
  */
 bool AgentCollection::nameAlreadyExists(const char* name, const char* mac) {
   for (agentMap::iterator it=_agents.begin(); it!=_agents.end(); ++it) {
-    if((strcmp(it->second->getName(), name) == 0) && (strcmp(it->second->getMAC(), mac) != 0))  {
+    if((strcasecmp(it->second->getName(), name) == 0) && (strcmp(it->second->getMAC(), mac) != 0))  {
       Debug("Found duplicate %s on ip %s\n", name, it->second->getIP()); // ip is easier for debugging since it's displayed on modules
       return true;
     }

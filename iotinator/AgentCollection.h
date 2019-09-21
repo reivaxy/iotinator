@@ -40,6 +40,7 @@ public:
   void autoRename(Agent *agent);
   bool nameAlreadyExists(const char* name, const char* mac);
   void renameAgent(const char* agentIp, const char* newName);
+  Agent* getByName(const char* name);
   
 protected:
   agentMap _agents;

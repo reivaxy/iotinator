@@ -32,16 +32,17 @@ void clockLostHandler(char *message) {
 // message has a first header line, then text of message:
 // message text is here (possibly multi line)
 void smsReceivedHandler(char *fullMessage) {
+  char * copie = strdup(fullMessage);
   int size = MAX_MSG_LENGTH + 1;
   char firstLine[size];
   char message[size];
   char number[size];
   char date[size];
-  char* eol = strstr(fullMessage, "\r\n");
+  char* eol = strstr(copie, "\r\n");
   // TODO check eol
   
   *eol = 0;
-  strlcpy(firstLine, fullMessage, size);  
+  strlcpy(firstLine, copie, size);  
   Serial.println("got");
   Serial.println(firstLine);
   strlcpy(message, (const char *)(eol + 2), size);
@@ -64,6 +65,7 @@ void smsReceivedHandler(char *fullMessage) {
   Serial.println(number);
   Serial.println(date);
   processSMS(message, number, date);
+  free(copie);
 }
 
 void smsReadyHandler(char *message) {

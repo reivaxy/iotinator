@@ -13,6 +13,14 @@
 
 #define MAX_MSG_LENGTH 500
 
+#define DEBUG_GSM // Uncomment this to enable debug messages over serial port
+
+#ifdef DEBUG_GSM
+#define Debug(...) Serial.printf(__VA_ARGS__)
+#else
+#define Debug(...)
+#endif
+
 enum GsmEvents {NONE, CONNECTION, CONNECTION_ROAMING, DISCONNECTION, DATETIME_OK, DATETIME_NOK, INCOMING_SMS, TIMEOUT, READY_FOR_SMS, SMS_READ};
 
 typedef std::multimap <GsmEvents, void (*)(char*)>  handlerMap;

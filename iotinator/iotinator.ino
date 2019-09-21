@@ -449,7 +449,8 @@ void printNumbers() {
 }
 
 void processSMS(char* message, char* phoneNumber, char* date) {
-  // gsm.sendSMS(ADMIN_NUMBER, message);
+//   gsm.sendSMS(ADMIN_NUMBER, message);
+//   return;
   Serial.printf("Processing message $%s$\n", message);
   if(strncasecmp(message, "list", 4) == 0) {
     char* list = agentCollection->list();
@@ -459,8 +460,33 @@ void processSMS(char* message, char* phoneNumber, char* date) {
     } else {
       gsm.sendSMS(phoneNumber, "No module");
     }
+    return;
+  }
+  char* sep = strchr(message, ':');
+  if(sep != NULL) {
+    *sep = 0;
+    Agent* agent = agentCollection->getByName(message);
+    if(agent != NULL) {
+      int httpCode = 200;
+      const char* target = agent->getIP();
+      Serial.printf("Forwarding SMS message to %s (%s)\n",message, target);
+      // TODO send message and isAdmin flag
+      char payload[1000];
+      sprintf(payload, "{\"message\":\"%s\",\"phoneNumber\":\"%s\",\"isAdmin\":%s}", ++ sep, phoneNumber, "true");   // TODO: handle isAdmin
+      Serial.println(payload);
+      // Will return the full payload to update the agent 
+      module->APIPost(target, "/api/sms", payload, &httpCode, payload, 1000);  
+      Serial.printf("Response HTTP %d, %s\n", httpCode, payload);
+      if (httpCode == 200) {
+        agentCollection->refresh(payload);
+      }
+    }
   }
 }
+
+bool isAdmin(char *phoneNumber) {
+  return true; // TODO
+}  
 
 // For now, use specific methods to load each app.
 // Later: website could provide a manifest exposing all available apps, and their dependencies,
@@ -769,8 +795,15 @@ void readSerial() {
   if(strlen(message) > 0) {
     if(strncmp(message, "gsm:", 4) == 0) {
       gsm.sendCmd(message + 4);
+      return;
+    }
+    if(strncmp(message, "sms:", 4) == 0) {
+      processSMS(message+4, ADMIN_NUMBER, "now");
+    
+      return;
     }
   }
+
 }
 
 /*********************************
@@ -840,9 +873,6 @@ void loop() {
     initNtp();
     registerToWebsite();
     homeWifiFirstConnected = false;
-  }
-  
+  } 
   readSerial();
-  delay(20);
-  
 }

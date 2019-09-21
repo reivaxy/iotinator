@@ -14,6 +14,7 @@ Agent::Agent(const char* name, const char* mac, XIOTModule* module) {
   XUtils::safeStringCopy(_name, name, NAME_MAX_LENGTH);
   XUtils::safeStringCopy(_mac, mac, NAME_MAX_LENGTH);
   _module = module;
+  *_globalStatus = 0;
 }
 
 Agent::~Agent() {
@@ -128,6 +129,35 @@ const char* Agent::getCustom() {
     }
   }
   return _custom;
+}
+
+
+const char* Agent::getGlobalStatus() {
+  Debug("Agent::getGlobalStatus\n");
+  if(strcmp(_globalStatus, GLOBAL_STATUS_TOO_BIG_VALUE) == 0) {
+    Serial.println(GLOBAL_STATUS_TOO_BIG_VALUE);
+    _module->getDisplay()->setLine(1, "Global Status too big", TRANSIENT, NOT_BLINKING);
+    _module->getDisplay()->setLine(2, getName(), TRANSIENT, NOT_BLINKING);
+  }
+
+  return _globalStatus;
+}
+
+
+void Agent::setGlobalStatus(const char *globalStatus) {
+  Debug("Agent::setGlobalStatus\n");
+
+  if(globalStatus == NULL) {
+    *_globalStatus = 0;
+    return;
+  }
+  int size = strlen(globalStatus);
+  if(size > MAX_GLOBAL_STATUS_SIZE) {
+    Serial.println(GLOBAL_STATUS_TOO_BIG_VALUE);
+    strlcpy(_globalStatus, GLOBAL_STATUS_TOO_BIG_VALUE, MAX_GLOBAL_STATUS_SIZE+1);
+  } else {
+    strlcpy(_globalStatus, globalStatus, MAX_GLOBAL_STATUS_SIZE+1);
+  }
 }
 
 void Agent::renameTo(const char* newName) {
