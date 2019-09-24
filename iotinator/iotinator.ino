@@ -27,6 +27,7 @@
 MasterConfigClass *config;
 
 DisplayClass *oledDisplay;
+DisplayClass *oledDisplay2;
 
 #include "iotinatorSecrets.h"
 #include "gsm.h"
@@ -103,6 +104,9 @@ void setup() {
   // Initialise the OLED display
   oledDisplay = new DisplayClass(0x3C, sda, scl, true, 255);
   initDisplay();
+  
+  oledDisplay2 = new DisplayClass(0x3D, sda, scl, true, 255);
+  oledDisplay2->setLine(1, "HEYYY", NOT_TRANSIENT, BLINKING);
   
   // TODO: this implemenation is crap. It uses some of the module features, but not others...
   module = new XIOTModule(oledDisplay);
@@ -450,7 +454,7 @@ void printNumbers() {
 
 void processSMS(char* message, char* phoneNumber, char* date) {
   Serial.printf("Processing message $%s$\n", message);
-  if(strncasecmp("list", message, 4) == 0) {
+  if(strncasecmp(message, "list", 4) == 0) {
     char* list = agentCollection->list();
     if(list != NULL) {
       gsm.sendSMS(phoneNumber, list);
@@ -842,6 +846,7 @@ void loop() {
   
   // Display needs to be refreshed periodically to handle blinking
   oledDisplay->refresh();
+  oledDisplay2->refresh();
 
   // Time on display should be refreshed every second
   // Intentionnally not using the value returned by now(), since it changes

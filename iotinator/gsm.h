@@ -49,7 +49,7 @@ public:
 protected:
   void _connectionTimeOutHandler(char *message);
   void _resetIfNeeded();
-  void _readUntil2CharMsg(char *twoCharMsg);
+  void _readUntil2CharMsg(const char *twoCharMsg);
   
   SoftwareSerial* _serialSIM800;
   handlerMap _handlers;  

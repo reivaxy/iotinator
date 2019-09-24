@@ -216,19 +216,19 @@ void GsmClass::readGsm() {
   }
   if(strlen(message) > 0) {
     Debug("$%s$\n", message);
-    char resultId[20];
+    char *resultId;
     char *ptr = NULL;
     
     ptr = strstr(message, ": ");
     if (ptr != NULL) {
-      strlcpy(resultId, message, ptr - message + 1);  // resultId contains the response prefix (like +CMGR" for instance)
+      *ptr = 0;
+      resultId = message;  // resultId now points to the null terminated response prefix (like +CMGR" for instance)
       Debug("%s\n", resultId);
       ptr += 2;
       strlcpy(resultValue, ptr, MAX_MSG_LENGTH + 1);     
       Debug("%s\n", resultValue);
       
-      // If message is the result of CREG: connection status
-      
+      // If message is the result of CREG: connection status      
       if (strncmp(resultId, "+CREG", 5) == 0) {
         if (strstr(resultValue, "0,5")) {
           gsmEvent = CONNECTION_ROAMING;
@@ -247,20 +247,19 @@ void GsmClass::readGsm() {
       // If message is the result of CCLK: get time result
       if (strncmp(resultId, "+CCLK", 5) == 0) {
         // when datetime is not yet initialised it defaults to "04/01/01..." at least in my SIM module     
-        if (resultValue[1] == '0') {    // 1 because double quote is 0
+        if (resultValue[1] == '0') {    // offset 1 because double quote is at offset 0. '0' since we are now later than 2009. Will fail in 2100 :) TODO in case I'm still alive.
           gsmEvent = DATETIME_NOK;
         } else {
           gsmEvent = DATETIME_OK;
         }     
       }
-      // incoming SMS is available to read
+      // incoming SMS is available to read : +CMTI: "SM",10
       if (strncmp(resultId, "+CMTI", 5) == 0) {
         char *ptr = strstr(resultValue, ",");
         if (ptr != NULL) {
-          char msgId[10];
+          char *msgId;
           char readCmd[50];        
-          char delCmd[50];        
-          strlcpy(msgId, ptr + 1, 10);     
+          msgId = ptr + 1;     
           Serial.print("Reading incoming SMS ");
           Serial.println(msgId);
           sprintf(readCmd, "AT+CMGR=%s", msgId);
@@ -277,7 +276,7 @@ void GsmClass::readGsm() {
         // Empty lines sent within the message are just LF (10)
         // Read the message: read characters until first CR LF only line.  (13 10)
         int previousChar = 0;
-        strcat(resultValue, "\n");
+        strlcat(resultValue, "\n", MAX_MSG_LENGTH + 1);
         unsigned long timeOut = millis();
         
         while(true && !XUtils::isElapsedDelay(millis(), &timeOut, 2000)) {    
@@ -288,6 +287,7 @@ void GsmClass::readGsm() {
             if(incomingChar == 10) {
               if(previousChar == 13) {
                 resultValue[strlen(resultValue) - 1] = 0;  // remove LF
+                // we got the full message, exit loop
                 break;
               }
             }
@@ -303,7 +303,8 @@ void GsmClass::readGsm() {
             }        
 
           }
-        }             
+        }
+        // then read until OK message and new line             
         _readUntil2CharMsg("OK");
         _readUntil2CharMsg("\r\n");
         _waitingForCmdResult = false;
@@ -318,7 +319,7 @@ void GsmClass::readGsm() {
         _waitingForCmdResult = false;
         Serial.println("Not waiting");    
       }
-      // Message sent by SIM800 when ready for SMS (not a specific command response)
+      // Message sent by SIM800 when ready for SMS (not a specific command response, but usually after sending PIN)
       if (strncmp(message, "SMS Ready", 9) == 0) {
         gsmEvent = READY_FOR_SMS;      
       }      
@@ -359,7 +360,7 @@ void GsmClass::readGsm() {
   }    
 }
 
-void GsmClass::_readUntil2CharMsg(char *twoCharMsg) {
+void GsmClass::_readUntil2CharMsg(const char *twoCharMsg) {
   int incomingChar = 0;
   int previousChar = 0;
   while(_serialSIM800->available()) {    

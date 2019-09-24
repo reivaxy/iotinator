@@ -20,7 +20,7 @@ void clockHandler(char *message) {
   // when datetime is not yet initialised it defaults to 04/01/01 at least in my SIM module
   if (message[1] == '0') return;
   char timeMsg[100];
-  strcpy(timeMsg, ++message);
+  strlcpy(timeMsg, ++message, 100);
   timeMsg[8] = ' ';
   timeMsg[14] = 0;
   oledDisplay->refreshDateTime(timeMsg);  // Display time 
@@ -30,40 +30,42 @@ void clockLostHandler(char *message) {
 }
 
 // message has a first header line, then text of message:
-// message text is here (possibly multi line)
+// "REC UNREAD","+33627333734","","19/09/24,15:29:14+08"
+// Ventilo:0
 void smsReceivedHandler(char *fullMessage) {
-  char * copie = strdup(fullMessage);
+  char *copie = strdup(fullMessage);
   int size = MAX_MSG_LENGTH + 1;
-  char firstLine[size];
+  char *firstLine;
   char *message;
-  char number[30];   // could actually just be a pointer in the input string
-  char date[40];     // could actually just be a pointer in the input string
-  char* eol = strstr(copie, "\r\n");
-  // TODO check eol
+  char *number;
+  char *date;
   
+  char* eol = strstr(copie, "\r\n");
+  if(eol == NULL) {
+    Debug("Can't process this message, not on 2 lines.");
+    return;
+  }  
   *eol = 0;
-  strlcpy(firstLine, copie, size);  
+  firstLine = copie;  
   Serial.println("got");
   Serial.println(firstLine);
-  message = (char *)(eol + 2);
+  message = (char *)(eol + 2);  // skip \r\n , message points to the second line
   Serial.println(message);
 
   char* sep = "\",\"";
-  char* start = strstr(firstLine, sep) + strlen(sep);
-  char* end = strstr(start, sep);
-  // TODO: check end
-  
+  number = strstr(firstLine, sep) + strlen(sep);
+  char* end = strstr(number, sep);
+  if(end == NULL) {
+    Debug("Can't process this message, header format unknown.");
+    return;
+  } 
   *end = 0; 
-  Serial.printf("Start: $%s$, %d\n", start, strlen(start));
-  Serial.printf("End: $%s$\n", end);
- 
-  strlcpy(number, start, size);
-  Serial.printf("Number: $%s$\n", number);
-  start = end + 2*strlen(sep); // empty field (would not be empty if number in sim card contact book)
-  strlcpy(date, start, size);
+  Serial.printf("Number: $%s$, %d\n", number, strlen(number));
+
+  date = end + 2*strlen(sep); // empty field (would not be empty if number in sim card contact book)
   date[strlen(date) - 1] = 0; // remove last double quote
-  Serial.println(number);
-  Serial.println(date);
+  Serial.printf("Date: $%s$, %d\n", date, strlen(date));
+
   //gsm.sendSMS(number, message);
   processSMS(message, number, date);
   free(copie);
