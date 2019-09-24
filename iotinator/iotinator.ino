@@ -106,9 +106,12 @@ void setup() {
   initDisplay();
   
   oledDisplay2 = new DisplayClass(0x3D, sda, scl, true, 255);
-  oledDisplay2->setLine(1, "HEYYY", NOT_TRANSIENT, BLINKING);
+  oledDisplay2->heartBeatOff();
+  oledDisplay2->setTitle("Modules");
+  oledDisplay2->setLine(0, "Waiting for connections...");
   
-  // TODO: this implemenation is crap. It uses some of the module features, but not others...
+  // TODO: this implementation is crap. It uses some of the module features, but not others...
+  // Master needs to subclass XIOTModule
   module = new XIOTModule(oledDisplay);
   // Master endpoints need to be set first (when same endpoints: only first one set is called)
   addEndpoints();
@@ -359,7 +362,8 @@ void addEndpoints() {
     }
     char message[100];
     sprintf(message, "Registered modules: %d", agentCollection->getCount());
-    oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING);    
+    oledDisplay->setLine(2, message, NOT_TRANSIENT, NOT_BLINKING); 
+    refreshOled2();   
   });
 
   /**
@@ -480,6 +484,7 @@ void processSMS(char* message, char* phoneNumber, char* date) {
         Serial.printf("Response HTTP %d, %s\n", httpCode, payload);
         if (httpCode == 200) {
           agentCollection->refresh(payload);
+          refreshOled2();
         }
       }
     }
@@ -867,7 +872,8 @@ void loop() {
     timeLastPing = timeNow; 
     agentCollection->ping();
     uint32_t freeMem = system_get_free_heap_size();
-    Serial.printf("%s After ping Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);  
+    Serial.printf("%s After ping Free heap mem: %d\n", NTP.getTimeDateString().c_str(), freeMem);
+    refreshOled2();
   } 
   
   // Things to do only once after connection to internet.
@@ -878,4 +884,17 @@ void loop() {
     homeWifiFirstConnected = false;
   } 
   readSerial();
+}
+
+void refreshOled2() {
+  char* list = agentCollection->list();
+  char *token = strtok(list, "\n");
+  int line = 0;
+  while(token) {
+    oledDisplay2->setLine(line, token, NOT_TRANSIENT, NOT_BLINKING);
+    token = strtok(NULL, "\n");
+    line++;
+  }
+  free(list);
+  oledDisplay2->refresh(); 
 }
