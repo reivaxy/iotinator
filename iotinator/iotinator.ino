@@ -38,6 +38,8 @@ DisplayClass *oledDisplay2;
 // SIM800 Reset is connected to TX MCU 2 (D4)
 #define SIM800_RESET_PIN 2
 
+#define POWER_ALERT_INTERVAL 20*60*1000
+
 SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
 GsmClass gsm(&serialSIM800, 2);
 #include "gsmMessageHandlers.h"
@@ -58,6 +60,7 @@ time_t timeNow = 0;
 time_t timeLastTimeDisplay = 0;
 time_t timeLastWifiDisplay = 0;
 time_t timeLastPing = 0;
+unsigned long lastPowerAlertSent = 0;
 AgentCollection *agentCollection;
 Agent* agentToRename = NULL;
 
@@ -69,7 +72,7 @@ char glaJs2[50];
 int scl = 12;
 int sda = 14;
 
-
+int powerMonitorPin = 4;
 
 // Warning: XIOTModule class does not yet handle STA_AP module, but provides nice utilities
 // that we want to reuse here :) 
@@ -93,6 +96,8 @@ void setup() {
   scl = 2;
   sda = 0;
   #endif
+
+  pinMode(powerMonitorPin, INPUT);
 
   WiFi.mode(WIFI_OFF);
   Serial.begin(115200);
@@ -834,6 +839,18 @@ void loop() {
   if(defaultAP && (millis() > config->getDefaultAPExposition()) && config->isAPInitialized()) {
     defaultAP = false;
     initSoftAP();
+  }
+  
+  // Check if main power is present
+  int power = digitalRead(powerMonitorPin);
+  if (power != HIGH) {
+    oledDisplay->setLine(1, "POWER DOWN", NOT_TRANSIENT, NOT_BLINKING, NOT_COPY_SERIAL);
+    if (XUtils::isElapsedDelay(millis(), &lastPowerAlertSent, POWER_ALERT_INTERVAL)) {
+      gsm.sendSMS(config->getAdminNumber(), "POWER DOWN");  
+    }
+  
+  } else {
+    lastPowerAlertSent = 0;  // New alert if new power down.
   }
   
   // check if any new added agent needs to be renamed
