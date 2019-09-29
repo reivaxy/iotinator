@@ -72,7 +72,9 @@ void GsmClass::initGsm() {
   *_smsToProcess = 0;
   sendInitCmd("AT");  // This allows initializing uart parameters on sim board (rate...)
   sendInitCmd("AT");    // get rid of garbage characters (wait for response) 
+  sendInitCmd("AT+CFUN=1,1");  // software reset
   sendInitCmd("ATE0");  // no echo
+  sendInitCmd("AT+CLTS=1;&W"); // get time from network, and save this config
   sendPin();
 }
 
@@ -244,7 +246,11 @@ void GsmClass::readGsm() {
         }      
       }
 
-      // If message is the result of CCLK: get time result
+      // If message is unsollicited time from network
+      if (strncmp(resultId, "*PSUTTZ", 7) == 0) {
+            // If message is the result of CCLK: get time result
+            sendCmd("AT+CCLK?");
+      }
       if (strncmp(resultId, "+CCLK", 5) == 0) {
         // when datetime is not yet initialised it defaults to "04/01/01..." at least in my SIM module     
         if (resultValue[1] == '0') {    // offset 1 because double quote is at offset 0. '0' since we are now later than 2009. Will fail in 2100 :) TODO in case I'm still alive.

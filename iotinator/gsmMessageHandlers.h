@@ -19,11 +19,13 @@ void disconnectionHandler(char *message) {
 void clockHandler(char *message) {
   // when datetime is not yet initialised it defaults to 04/01/01 at least in my SIM module
   if (message[1] == '0') return;
-  char timeMsg[100];
-  strlcpy(timeMsg, ++message, 100);
-  timeMsg[8] = ' ';
-  timeMsg[14] = 0;
-  oledDisplay->refreshDateTime(timeMsg);  // Display time 
+  char timeMsg[200];
+//  strlcpy(timeMsg, ++message, 100);
+//  timeMsg[8] = ' ';
+//  timeMsg[14] = 0;
+//  oledDisplay->refreshDateTime(timeMsg);  // Display time
+  sprintf(timeMsg, "GSM connected on %s", message);
+  gsm.sendSMS(config->getAdminNumber(), timeMsg); 
 }
 void clockLostHandler(char *message) {
   oledDisplay->blinkDateTime(true);  // Display time 
