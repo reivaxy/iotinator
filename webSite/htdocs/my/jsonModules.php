@@ -1,6 +1,6 @@
 <?
 header("Content-Type: application/json");
-require('../../includes/getModules.php');
+require('../includes/getModules.php');
 
 $modules = getList();
 

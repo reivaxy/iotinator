@@ -850,7 +850,7 @@ void loop() {
     }
   
   } else {
-    lastPowerAlertSent = 0;  // New alert if new power down.
+    // lastPowerAlertSent = 0;  // TODO ? New alert if new power down.
   }
   
   // check if any new added agent needs to be renamed

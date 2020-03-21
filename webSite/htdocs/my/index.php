@@ -1,7 +1,7 @@
 
 <?
 
-require('../../includes/getModules.php');
+require('../includes/getModules.php');
 
 $modules = getList();
 

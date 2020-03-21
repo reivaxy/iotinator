@@ -1,6 +1,6 @@
 <?php
 $inc_path = ini_get('include_path');
-$inc_path .= ':/home/reeftanklp/includes' ;
+$inc_path .= ':/iotinator.com/includes' ;
 ini_set('include_path', $inc_path);
 
 require_once('myconfig.inc.php');

@@ -1,6 +1,6 @@
 <?
 
-require('../../includes/utils.inc.php');
+require('../includes/utils.inc.php');
 
 // mac of the module to remove from modules table
 $mac = $_REQUEST['mac'];

@@ -1,6 +1,6 @@
 <?
 
-require('../../includes/utils.inc.php');
+require('../includes/utils.inc.php');
 $header = apache_request_headers();
 
 // Ip to lookup. TODO : Check if HTTP_X_FORWARDED_FOR and use it ?

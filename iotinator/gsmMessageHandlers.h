@@ -25,7 +25,8 @@ void clockHandler(char *message) {
 //  timeMsg[14] = 0;
 //  oledDisplay->refreshDateTime(timeMsg);  // Display time
   sprintf(timeMsg, "GSM connected on %s", message);
-  gsm.sendSMS(config->getAdminNumber(), timeMsg); 
+  Serial.println(timeMsg);
+  // gsm.sendSMS(config->getAdminNumber(), timeMsg); 
 }
 void clockLostHandler(char *message) {
   oledDisplay->blinkDateTime(true);  // Display time 
