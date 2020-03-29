@@ -40,7 +40,7 @@ DisplayClass *oledDisplay2;
 
 #define POWER_ALERT_INTERVAL 20*60*1000
 
-SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false, 1000);
+SoftwareSerial serialSIM800(SIM800_TX_PIN, SIM800_RX_PIN, false);
 GsmClass gsm(&serialSIM800, 2);
 #include "gsmMessageHandlers.h"
 
@@ -88,76 +88,214 @@ bool displayAP = false;
 bool ntpListenerInitialized = false;
 String ipOnHomeSsid;
 
-void setup() {
 
-  #undef ESP01
-  #ifdef ESP01
-  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
-  scl = 2;
-  sda = 0;
-  #endif
+void timeDisplay() {
+  oledDisplay->clockIcon(!ntpTimeInitialized);
+  
+  // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
+  
+  time_t millisec = millis();
+  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
+    oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
+  } else {
+    char message[10];
+    sprintf(message, "%d", millisec/1000);
+    oledDisplay->refreshDateTime(message);
+    
+  }
+}
 
-  pinMode(powerMonitorPin, INPUT);
-
-  WiFi.mode(WIFI_OFF);
-  Serial.begin(115200);
-  delay(100);
-  config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
-  config->init();
-  Serial.println(config->getName());
-
-  // Initialise the OLED display
-  oledDisplay = new DisplayClass(0x3C, sda, scl, true, 255);
-  initDisplay();
+void wifiDisplay() {
+  char message[100];
+  WifiType wifiType = AP;
   
-  oledDisplay2 = new DisplayClass(0x3D, sda, scl, true, 255);
-  oledDisplay2->heartBeatOff();
-  oledDisplay2->setTitle("Modules");
-  oledDisplay2->setLine(0, "Waiting for connections...");
+  if(config->isAPInitialized()) {
+    oledDisplay->setLine(1, "", NOT_TRANSIENT, NOT_BLINKING);
+  } else {
+    oledDisplay->setLine(1, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
+  }
+    
+  if(displayAP && homeWifiConnected) {
+    strcpy(message, config->getHomeSsid());     
+    strcat(message, " ");
+    ipOnHomeSsid.getBytes((byte *)message + strlen(message), 50);
+    oledDisplay->setLine(0, message);
+  } else {
+    strcpy(message, config->getApSsid());
+    strcat(message, " ");
+    IPAddress ipAddress = WiFi.softAPIP();
+    ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
+    oledDisplay->setLine(0, message);
+  }
+  displayAP = !displayAP;
   
-  // TODO: this implementation is crap. It uses some of the module features, but not others...
-  // Master needs to subclass XIOTModule
-  module = new XIOTModule(oledDisplay);
-  // Master endpoints need to be set first (when same endpoints: only first one set is called)
-  addEndpoints();
-  module->addModuleEndpoints();
-  
-  // Initialize the Agent Collection
-  agentCollection = new AgentCollection(module);
-  
-  // After a reset, open Default Access Point
-  // If Access Point was customized, we'll switch to it after one minute
-  // This is supposed to give agent modules time to initialize.
-  // Before checking for Home Wifi configuration, module is Wifi Access Point only
-  WiFi.mode(WIFI_AP);
-  initSoftAP();
-  
-  // If Home wifi was configured previously, module should connect to Home Wifi.
-  if(config->isHomeWifiConfigured()) {
-    Serial.print(MSG_WIFI_CONNECTING_HOME);
-    Serial.println(config->getHomeSsid());
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.begin(config->getHomeSsid(), config->getHomePwd());
-  }  
-  
-  stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
-  stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
-  
-  if(gsmEnabled = gsm.init()) {
-    gsm.setPin(config->getSimPin());
-    printNumbers();
-    initGsmMessageHandlers();
-    oledDisplay->gsmIcon(true); // blinking icon : not connected    
+  bool blinkWifi = false;
+  if (!homeWifiConnected && config->isHomeWifiConfigured()) {
+    blinkWifi = true;
   }
   
-  wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
-  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected);
-  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
-    Serial.printf("NTP event: %d\n", event);
-    ntpEventToProcess = true;
-    ntpEvent = event;
-  });
-     
+  if(config->isHomeWifiConfigured()) {
+    wifiType = AP_STA;
+  } 
+  oledDisplay->wifiIcon(blinkWifi, wifiType);
+}
+
+// For now, use specific methods to load each app.
+// Later: website could provide a manifest exposing all available apps, and their dependencies,
+// and make this generic.
+void printAppPage() {
+  char *page = (char *)malloc(strlen(appLoader) + strlen(config->getWebSite()) + 1);
+  sprintf(page, appLoader, config->getWebSite());
+  module->sendHtml(page, 200);
+  free(page);
+}
+
+void printAppGLAPage() {
+  char *page = (char *)malloc(strlen(appGLALoader) 
+  + strlen(config->getWebSite()) 
+  + strlen(glaCss1) 
+  + strlen(glaCss2) 
+  + strlen(glaJs1) 
+  + strlen(glaJs2) 
+  + 1);
+  sprintf(page, appGLALoader, config->getWebSite(), glaCss1, glaCss2, glaJs1, glaJs2);
+  module->sendHtml(page, 200);
+  free(page);
+}
+
+void printNumbers() {
+  if(!gsmEnabled) return;
+  for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
+    Serial.print("Numero ");
+    Serial.print(i);
+    Serial.print(" ");
+    Serial.print(config->getRegisteredPhone(i)->getNumber());
+    Serial.println(config->getRegisteredPhone(i)->isAdmin()?" Admin":"");
+  }
+}
+
+void printHomePage() {
+  // If init already done, display page saying so, otherwise display init page
+  
+  // TODO Disabled for now, need to be enabled !!
+  if (false && config->isAPInitialized()) {
+    Serial.println("Init done Page");
+    module->sendText(MSG_INIT_ALREADY_DONE, 200);
+  } else {
+  
+    char *page = (char *)malloc(strlen(initPage) + 10);
+    sprintf(page, initPage, gsmEnabled ? "": "noGsm");
+    module->sendHtml(page, 200);
+    free(page);
+    server->on("/initSave",  HTTP_POST, [](){
+      Serial.println("Rq on /initSave");
+      
+      // TODO: /initSave might need to be disabled once done ?
+      if(false && config->isAPInitialized()) {
+        module->sendHtml(MSG_ERR_ALREADY_INITIALIZED, 403);
+        return;
+      }
+      
+      // TODO add some controls
+      if (false && !server->hasArg("apSsid")) {
+        module->sendText(MSG_ERR_BAD_REQUEST, 403);
+        return;
+      }
+      String adminNumber = server->arg("admin");
+      if (adminNumber.length() > 0) {
+        if (adminNumber.length() < 10) {
+          module->sendText(MSG_ERR_ADMIN_LENGTH, 403);
+          return;
+        }
+        config->setAdminNumber(adminNumber);
+        gsm.sendSMS(config->getAdminNumber(), "You are admin");  //
+        oledDisplay->setLine(2, ""); 
+        oledDisplay->setLine(2, MSG_INIT_DONE, true, false); 
+      }
+      
+      // TODO: add checks in the config methods
+      // Read and save new AP SSID 
+      String apSsid = server->arg("apSsid");
+      if (apSsid.length() > 0) {
+        // TODO: add checks
+        config->setApSsid(apSsid);
+        wifiDisplay();
+      }
+      // Read and save the web app server      
+      String webSite = server->arg("webSite");
+      if (webSite.length() > 0) {
+        // TODO: add checks
+        config->setWebSite(webSite);
+      }
+      // Read and save the api key      
+      String apiKey = server->arg("apiKey");
+      if (apiKey.length() > 0) {
+        // TODO: add checks
+        config->setApiKey(apiKey);
+      }
+            
+      // Read and save the ntp host      
+      String ntpHost = server->arg("ntpHost");
+      if (ntpHost.length() > 0) {
+        // TODO: add checks
+        config->setNtpServer(ntpHost);
+      }
+      // Read and save new AP PWD 
+      String apPwd = server->arg("apPwd");
+      if( apPwd.length() > 0) {
+        // Password need to be at least 8 characters
+        if(apPwd.length() < 8) {
+          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
+          return;
+        }
+        config->setApPwd(apPwd);
+      }
+            
+      // Read and save home SSID 
+      String homeSsid = server->arg("homeSsid");
+      if (homeSsid.length() > 0) {
+        config->setHomeSsid(homeSsid);
+      }
+      // Read and save home PWD 
+      String homePwd = server->arg("homePwd");
+      if( homePwd.length() > 0) {
+        // Password need to be at least 8 characters
+        if(homePwd.length() < 8) {
+          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
+          return;
+        }
+        config->setHomePwd(homePwd);
+      }
+      
+      // Read and save sim PIN
+      String simPin = server->arg("simPin");
+      if( simPin.length() > 0) {
+        // simPin need to be 4 characters
+        if(simPin.length() != 4) {
+          module->sendText(MSG_ERR_PIN_LENGTH, 403);
+          return;
+        }
+        config->setSimPin(simPin.c_str());
+      }
+            
+      
+      // TODO: when GSM connected, send code, display confirmation page, 
+      // and save once code confirmed
+      // in the meantime, just save
+      config->saveToEeprom();
+      
+      // New Access Point
+      WiFi.mode(WIFI_AP_STA);
+      WiFi.softAP(config->getApSsid(), config->getApPwd());
+      if(config->isHomeWifiConfigured()) {
+        WiFi.begin(config->getHomeSsid(), config->getHomePwd());
+      }
+      
+      printNumbers();
+      module->sendText(MSG_INIT_DONE, 200);
+      
+    });     
+  }
 }
 
 // Opens the Wifi network Access Point.
@@ -235,6 +373,19 @@ void onSTADisconnected(WiFiEventStationModeDisconnected event) {
     wifiDisplay();
     NTP.stop();
   }
+}
+
+void refreshOled2() {
+  char* list = agentCollection->list();
+  char *token = strtok(list, "\n");
+  int line = 0;
+  while(token) {
+    oledDisplay2->setLine(line, token, NOT_TRANSIENT, NOT_BLINKING);
+    token = strtok(NULL, "\n");
+    line++;
+  }
+  free(list);
+  oledDisplay2->refresh(); 
 }
 
 void addEndpoints() {
@@ -450,16 +601,6 @@ void addEndpoints() {
 //  http.end();
 //}
 
-void printNumbers() {
-  if(!gsmEnabled) return;
-  for(int i = 0; i < MAX_PHONE_NUMBERS; i++) {
-    Serial.print("Numero ");
-    Serial.print(i);
-    Serial.print(" ");
-    Serial.print(config->getRegisteredPhone(i)->getNumber());
-    Serial.println(config->getRegisteredPhone(i)->isAdmin()?" Admin":"");
-  }
-}
 
 void processSMS(char* message, char* phoneNumber, char* date) {
   Serial.printf("Processing message $%s$\n", message);
@@ -500,152 +641,6 @@ bool isAdmin(char *phoneNumber) {
   return true; // TODO
 }  
 
-// For now, use specific methods to load each app.
-// Later: website could provide a manifest exposing all available apps, and their dependencies,
-// and make this generic.
-void printAppPage() {
-  char *page = (char *)malloc(strlen(appLoader) + strlen(config->getWebSite()) + 1);
-  sprintf(page, appLoader, config->getWebSite());
-  module->sendHtml(page, 200);
-  free(page);
-}
-
-void printAppGLAPage() {
-  char *page = (char *)malloc(strlen(appGLALoader) 
-  + strlen(config->getWebSite()) 
-  + strlen(glaCss1) 
-  + strlen(glaCss2) 
-  + strlen(glaJs1) 
-  + strlen(glaJs2) 
-  + 1);
-  sprintf(page, appGLALoader, config->getWebSite(), glaCss1, glaCss2, glaJs1, glaJs2);
-  module->sendHtml(page, 200);
-  free(page);
-}
-
-void printHomePage() {
-  // If init already done, display page saying so, otherwise display init page
-  
-  // TODO Disabled for now, need to be enabled !!
-  if (false && config->isAPInitialized()) {
-    Serial.println("Init done Page");
-    module->sendText(MSG_INIT_ALREADY_DONE, 200);
-  } else {
-  
-    char *page = (char *)malloc(strlen(initPage) + 10);
-    sprintf(page, initPage, gsmEnabled ? "": "noGsm");
-    module->sendHtml(page, 200);
-    free(page);
-    server->on("/initSave",  HTTP_POST, [](){
-      Serial.println("Rq on /initSave");
-      
-      // TODO: /initSave might need to be disabled once done ?
-      if(false && config->isAPInitialized()) {
-        module->sendHtml(MSG_ERR_ALREADY_INITIALIZED, 403);
-        return;
-      }
-      
-      // TODO add some controls
-      if (false && !server->hasArg("apSsid")) {
-        module->sendText(MSG_ERR_BAD_REQUEST, 403);
-        return;
-      }
-      String adminNumber = server->arg("admin");
-      if (adminNumber.length() > 0) {
-        if (adminNumber.length() < 10) {
-          module->sendText(MSG_ERR_ADMIN_LENGTH, 403);
-          return;
-        }
-        config->setAdminNumber(adminNumber);
-        gsm.sendSMS(config->getAdminNumber(), "You are admin");  //
-        oledDisplay->setLine(2, ""); 
-        oledDisplay->setLine(2, MSG_INIT_DONE, true, false); 
-      }
-      
-      // TODO: add checks in the config methods
-      // Read and save new AP SSID 
-      String apSsid = server->arg("apSsid");
-      if (apSsid.length() > 0) {
-        // TODO: add checks
-        config->setApSsid(apSsid);
-        wifiDisplay();
-      }
-      // Read and save the web app server      
-      String webSite = server->arg("webSite");
-      if (webSite.length() > 0) {
-        // TODO: add checks
-        config->setWebSite(webSite);
-      }
-      // Read and save the api key      
-      String apiKey = server->arg("apiKey");
-      if (apiKey.length() > 0) {
-        // TODO: add checks
-        config->setApiKey(apiKey);
-      }
-            
-      // Read and save the ntp host      
-      String ntpHost = server->arg("ntpHost");
-      if (ntpHost.length() > 0) {
-        // TODO: add checks
-        config->setNtpServer(ntpHost);
-      }
-      // Read and save new AP PWD 
-      String apPwd = server->arg("apPwd");
-      if( apPwd.length() > 0) {
-        // Password need to be at least 8 characters
-        if(apPwd.length() < 8) {
-          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
-          return;
-        }
-        config->setApPwd(apPwd);
-      }
-            
-      // Read and save home SSID 
-      String homeSsid = server->arg("homeSsid");
-      if (homeSsid.length() > 0) {
-        config->setHomeSsid(homeSsid);
-      }
-      // Read and save home PWD 
-      String homePwd = server->arg("homePwd");
-      if( homePwd.length() > 0) {
-        // Password need to be at least 8 characters
-        if(homePwd.length() < 8) {
-          module->sendText(MSG_ERR_PASSWORD_LENGTH, 403);
-          return;
-        }
-        config->setHomePwd(homePwd);
-      }
-      
-      // Read and save sim PIN
-      String simPin = server->arg("simPin");
-      if( simPin.length() > 0) {
-        // simPin need to be 4 characters
-        if(simPin.length() != 4) {
-          module->sendText(MSG_ERR_PIN_LENGTH, 403);
-          return;
-        }
-        config->setSimPin(simPin.c_str());
-      }
-            
-      
-      // TODO: when GSM connected, send code, display confirmation page, 
-      // and save once code confirmed
-      // in the meantime, just save
-      config->saveToEeprom();
-      
-      // New Access Point
-      WiFi.mode(WIFI_AP_STA);
-      WiFi.softAP(config->getApSsid(), config->getApPwd());
-      if(config->isHomeWifiConfigured()) {
-        WiFi.begin(config->getHomeSsid(), config->getHomePwd());
-      }
-      
-      printNumbers();
-      module->sendText(MSG_INIT_DONE, 200);
-      
-    });     
-  }
-}
 
 void initDisplay( void ) {
   char message[100];
@@ -655,19 +650,13 @@ void initDisplay( void ) {
   timeDisplay();
 }
 
-void timeDisplay() {
-  oledDisplay->clockIcon(!ntpTimeInitialized);
-  
-  // TODO: if no Home wifi, no NTP, => test if  GSM enabled and use its time
-  
-  time_t millisec = millis();
-  if(ntpTimeInitialized && millisec > config->getDefaultAPExposition()) {
-    oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
+unsigned char checkApiKey() {
+  if(strlen(config->getApiKey()) == 0) {
+    Serial.println("No Api Key provided.");
+    return 0;
   } else {
-    char message[10];
-    sprintf(message, "%d", millisec/1000);
-    oledDisplay->refreshDateTime(message);
-    
+    Serial.println("Api Key is defined.");
+    return 1;
   }
 }
 
@@ -735,50 +724,6 @@ void registerToWebsite() {
   
 }
 
-unsigned char checkApiKey() {
-  if(strlen(config->getApiKey()) == 0) {
-    Serial.println("No Api Key provided.");
-    return 0;
-  } else {
-    Serial.println("Api Key is defined.");
-    return 1;
-  }
-}
-
-void wifiDisplay() {
-  char message[100];
-  WifiType wifiType = AP;
-  
-  if(config->isAPInitialized()) {
-    oledDisplay->setLine(1, "", NOT_TRANSIENT, NOT_BLINKING);
-  } else {
-    oledDisplay->setLine(1, MSG_INIT_REQUEST, NOT_TRANSIENT, BLINKING);
-  }
-    
-  if(displayAP && homeWifiConnected) {
-    strcpy(message, config->getHomeSsid());     
-    strcat(message, " ");
-    ipOnHomeSsid.getBytes((byte *)message + strlen(message), 50);
-    oledDisplay->setLine(0, message);
-  } else {
-    strcpy(message, config->getApSsid());
-    strcat(message, " ");
-    IPAddress ipAddress = WiFi.softAPIP();
-    ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
-    oledDisplay->setLine(0, message);
-  }
-  displayAP = !displayAP;
-  
-  bool blinkWifi = false;
-  if (!homeWifiConnected && config->isHomeWifiConfigured()) {
-    blinkWifi = true;
-  }
-  
-  if(config->isHomeWifiConfigured()) {
-    wifiType = AP_STA;
-  } 
-  oledDisplay->wifiIcon(blinkWifi, wifiType);
-}
 
 void readSerial() {
   int incomingChar, length;
@@ -817,6 +762,79 @@ void readSerial() {
   }
 
 }
+
+void setup() {
+
+  #undef ESP01
+  #ifdef ESP01
+  Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY); 
+  scl = 2;
+  sda = 0;
+  #endif
+
+  pinMode(powerMonitorPin, INPUT);
+
+  WiFi.mode(WIFI_OFF);
+  Serial.begin(115200);
+  delay(100);
+  config = new MasterConfigClass((unsigned int)CONFIG_VERSION, (char*)MODULE_NAME);
+  config->init();
+  Serial.println(config->getName());
+
+  // Initialise the OLED display
+  oledDisplay = new DisplayClass(0x3C, sda, scl, true, 255);
+  initDisplay();
+  
+  oledDisplay2 = new DisplayClass(0x3D, sda, scl, true, 255);
+  oledDisplay2->heartBeatOff();
+  oledDisplay2->setTitle("Modules");
+  oledDisplay2->setLine(0, "Waiting for connections...");
+  
+  // TODO: this implementation is crap. It uses some of the module features, but not others...
+  // Master needs to subclass XIOTModule
+  module = new XIOTModule(oledDisplay);
+  // Master endpoints need to be set first (when same endpoints: only first one set is called)
+  addEndpoints();
+  module->addModuleEndpoints();
+  
+  // Initialize the Agent Collection
+  agentCollection = new AgentCollection(module);
+  
+  // After a reset, open Default Access Point
+  // If Access Point was customized, we'll switch to it after one minute
+  // This is supposed to give agent modules time to initialize.
+  // Before checking for Home Wifi configuration, module is Wifi Access Point only
+  WiFi.mode(WIFI_AP);
+  initSoftAP();
+  
+  // If Home wifi was configured previously, module should connect to Home Wifi.
+  if(config->isHomeWifiConfigured()) {
+    Serial.print(MSG_WIFI_CONNECTING_HOME);
+    Serial.println(config->getHomeSsid());
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.begin(config->getHomeSsid(), config->getHomePwd());
+  }  
+  
+  stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
+  stationDisconnectedHandler  = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+  
+  if(gsmEnabled = gsm.init()) {
+    gsm.setPin(config->getSimPin());
+    printNumbers();
+    initGsmMessageHandlers();
+    oledDisplay->gsmIcon(true); // blinking icon : not connected    
+  }
+  
+  wifiSTAGotIpHandler = WiFi.onStationModeGotIP(onSTAGotIP); 
+  wifiSTADisconnectedHandler = WiFi.onStationModeDisconnected(onSTADisconnected);
+  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
+    Serial.printf("NTP event: %d\n", event);
+    ntpEventToProcess = true;
+    ntpEvent = event;
+  });
+     
+}
+
 
 /*********************************
  * Main Loop
@@ -903,15 +921,3 @@ void loop() {
   readSerial();
 }
 
-void refreshOled2() {
-  char* list = agentCollection->list();
-  char *token = strtok(list, "\n");
-  int line = 0;
-  while(token) {
-    oledDisplay2->setLine(line, token, NOT_TRANSIENT, NOT_BLINKING);
-    token = strtok(NULL, "\n");
-    line++;
-  }
-  free(list);
-  oledDisplay2->refresh(); 
-}
