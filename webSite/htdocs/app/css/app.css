@@ -41,12 +41,17 @@ hr {
   background-color: pink;
 }
 
-div.name div.commands {
+div.commands {
   position: absolute;
-  top:0;
+  top:4px;
   bottom:0;
   right:0;
 }
+div.name div.commands {
+  display:none;
+  top:0;
+}
+
 /*.moduleWrapper div.isalert {*/
   /*background-color: #FFDDDD;*/
 /*}*/
@@ -131,5 +136,15 @@ span.icon.icon-smile {
 }
 .footer.connected.c-1 {
   background-color: red;
+}
+
+.name .nameEditor {
+  display: none;
+}
+.name.editing .nameEditor {
+  display: initial;
+}
+.name.editing span {
+  display: none;
 }
 
