@@ -160,7 +160,7 @@ char* MasterConfigClass::getApPwd(bool force) {
 void MasterConfigClass::setDefaultAPExposition(int msDelay) {
   _getDataPtr()->defaultAPExposition = msDelay;
 }
-int MasterConfigClass::getDefaultAPExposition(void) {
+unsigned int MasterConfigClass::getDefaultAPExposition(void) {
   return _getDataPtr()->defaultAPExposition;
 }
   

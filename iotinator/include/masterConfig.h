@@ -91,7 +91,7 @@ public:
   char* getApPwd(bool force=false);
   char* getSimPin();
   void setDefaultAPExposition(int delay);
-  int getDefaultAPExposition(void);
+  unsigned int getDefaultAPExposition(void);
   
   bool isHomeWifiConfigured(void);
   bool isAPInitialized(void);

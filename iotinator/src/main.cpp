@@ -99,7 +99,7 @@ void timeDisplay() {
     oledDisplay->refreshDateTime(NTP.getTimeDateString().c_str());
   } else {
     char message[10];
-    sprintf(message, "%d", millisec/1000);
+    sprintf(message, "%dl", millisec/1000);
     oledDisplay->refreshDateTime(message);
     
   }

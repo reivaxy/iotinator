@@ -37,7 +37,6 @@ void clockLostHandler(char *message) {
 // Ventilo:0
 void smsReceivedHandler(char *fullMessage) {
   char *copie = strdup(fullMessage);
-  int size = MAX_MSG_LENGTH + 1;
   char *firstLine;
   char *message;
   char *number;
@@ -55,7 +54,7 @@ void smsReceivedHandler(char *fullMessage) {
   message = (char *)(eol + 2);  // skip \r\n , message points to the second line
   Serial.println(message);
 
-  char* sep = "\",\"";
+  const char* sep = "\",\"";
   number = strstr(firstLine, sep) + strlen(sep);
   char* end = strstr(number, sep);
   if(end == NULL) {
