@@ -2,8 +2,9 @@
 #include <string>
 #include <Arduino.h>
 #include "gsm.h"
+#include <string.h>
 
-#define CHECK_NETWORK_PERIOD 30000 // in ms
+#define CHECK_NETWORK_PERIOD 10000 // in ms
 #define RESET_GSM_AFTER 60000 * 2  // Reset GSM after x ms of disconnection (bad CREG response) 
 
 #define SEND_INTERVAL_DELAY 150  // Delay after sending a command to SIM800 (solves lag when sending message after reading one)
@@ -11,15 +12,15 @@
 #define RESET_LOW_DURATION 2000 // how long should SIM800 reset pin be kept low, in ms
 #define RESET_HIGH_WAIT 2000    // delay after high before gsm init in ms
 
-#define GSM_CMD_TIMEOUT 4000
+#define GSM_CMD_TIMEOUT 15000
 
 // TODO handle a different fifo for gsm commands to store them while connection is not done ??
 GsmClass::GsmClass(SoftwareSerial* serial, int resetGpio) {
   _serialSIM800 = serial;
   _resetGpio = resetGpio;
   if (!DISABLE_GSM) {
-    _serialSIM800->begin(9600);
     pinMode(_resetGpio, OUTPUT);
+    _serialSIM800->begin(9600);
   }   
 };
 
@@ -71,9 +72,9 @@ void GsmClass::initGsm() {
   _isInitialized = true;
   *_smsToProcess = 0;
   sendInitCmd("AT");  // This allows initializing uart parameters on sim board (rate...)
-  sendInitCmd("AT");    // get rid of garbage characters (wait for response) 
-  sendInitCmd("AT+CFUN=1,1");  // software reset
-  sendInitCmd("ATE0");  // no echo
+  sendInitCmd("AT+CFUN=1,1");
+  sendInitCmd("ATE 0");  // no echo
+  sendInitCmd("AT+IPR=9600");    // get rid of garbage characters (wait for response) 
   sendInitCmd("AT+CLTS=1;&W"); // get time from network, and save this config
   sendPin();
 }
@@ -153,7 +154,9 @@ void GsmClass::refresh() {
   } 
 
   // check gsm serial line for incoming stuff
-  readGsm();
+  if (XUtils::isElapsedDelay(now, &_lastCheckSms, 1000)) {
+    readGsm();
+  }
   
 }
 
@@ -197,17 +200,17 @@ void GsmClass::readGsm() {
   *message = 0;
   char resultValue[MAX_MSG_LENGTH + 1];
   *resultValue = 0;
-  
-  while(_serialSIM800->available()){    
+  Serial.println("readGsm");
+  while(_serialSIM800->available()) {    
     incomingChar = _serialSIM800->read();
     if(incomingChar > 0) {
       // When 'cr' is detected, process received message
-      if(incomingChar == 10) {
+      if(incomingChar == 10 || incomingChar == 13) {
         break;
       } else {
         length = strlen(message);
         if(length < MAX_MSG_LENGTH - 2) {
-          message[length] = incomingChar;
+          message[length] = (char)incomingChar;
           message[length + 1] = 0;
         } else {
           Serial.println("Serial message too big, truncating");
@@ -217,18 +220,22 @@ void GsmClass::readGsm() {
     }
   }
   if(strlen(message) > 0) {
-    Debug("$%s$\n", message);
+    Debug("msg: >%s<\n", message);
     char *resultId;
     char *ptr = NULL;
     
+    if (strncmp(message, "ERROR", 5) == 0) {
+      sendCmd("AT+CEER");
+      return;
+    }
     ptr = strstr(message, ": ");
     if (ptr != NULL) {
       *ptr = 0;
       resultId = message;  // resultId now points to the null terminated response prefix (like +CMGR" for instance)
-      Debug("%s\n", resultId);
+      Debug("cmd: %s\n", resultId);
       ptr += 2;
       strlcpy(resultValue, ptr, MAX_MSG_LENGTH + 1);     
-      Debug("%s\n", resultValue);
+      Debug("val: %s\n", resultValue);
       
       // If message is the result of CREG: connection status      
       if (strncmp(resultId, "+CREG", 5) == 0) {
@@ -316,7 +323,8 @@ void GsmClass::readGsm() {
         _waitingForCmdResult = false;
         gsmEvent = SMS_READ;
         Serial.println(resultValue);    
-        Serial.println("Not waiting");    
+        delay(150);
+        //Serial.println("Not waiting");    
     
       }
     } else {

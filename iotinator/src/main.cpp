@@ -3,7 +3,7 @@
  *  Xavier Grosjean 2017
  *  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License
  */
- 
+
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <stdio.h>
@@ -118,13 +118,13 @@ void wifiDisplay() {
   if(displayAP && homeWifiConnected) {
     strcpy(message, config->getHomeSsid());     
     strcat(message, " ");
-    ipOnHomeSsid.getBytes((byte *)message + strlen(message), 50);
+    ipOnHomeSsid.getBytes((unsigned char *)message + strlen(message), 50);
     oledDisplay->setLine(0, message);
   } else {
     strcpy(message, config->getApSsid());
     strcat(message, " ");
     IPAddress ipAddress = WiFi.softAPIP();
-    ipAddress.toString().getBytes((byte *)message + strlen(message), 50);
+    ipAddress.toString().getBytes((unsigned char *)message + strlen(message), 50);
     oledDisplay->setLine(0, message);
   }
   displayAP = !displayAP;
@@ -303,7 +303,11 @@ void printHomePage() {
 void initSoftAP() {
   Serial.print(MSG_WIFI_OPENING_AP);
   Serial.println(config->getApSsid());
-  WiFi.softAP(config->getApSsid(), config->getApPwd());
+  // IPAddress ip(192, 168, 4, 1);
+  // IPAddress gateway(192, 168, 4, 1);
+  // IPAddress subnet(255, 255, 255, 0);
+  // WiFi.softAPConfig(ip, gateway, subnet);
+  WiFi.softAP(config->getApSsid(), config->getApPwd(), 1, false, 8);
   Serial.println(WiFi.softAPIP());
   wifiDisplay();
 }
@@ -329,7 +333,7 @@ void onSTAGotIP (WiFiEventStationModeGotIP ipInfo) {
   homeWifiConnected = true;
   if(module->isWaitingOTA()) {
     char message[40];
-    sprintf(message, "Ota master ready: %s", ipOnHomeSsid.c_str());
+    sprintf(message, "Ota: %s", ipOnHomeSsid.c_str());
     oledDisplay->setLine(0, message, NOT_TRANSIENT, NOT_BLINKING); 
     ArduinoOTA.begin();    
     return;
@@ -571,17 +575,20 @@ void addEndpoints() {
     if(forwardTo.length() != 0) {    
       Serial.print("Forwarding ota to ");
       Serial.println(forwardTo);
+      module->sendJson("{}", httpCode);      
       char message[SSID_MAX_LENGTH + PWD_MAX_LENGTH + 40];
       sprintf(message, "{\"%s\":\"%s\",\"%s\":\"%s\"}", XIOTModuleJsonTag::ssid, config->getHomeSsid(), XIOTModuleJsonTag::pwd, config->getHomePwd());
       module->APIPost(forwardTo, "/api/ota", message, &httpCode, NULL, 0);
     } else {
+      char message[200];
+      sprintf(message, "{\"result\":\"OTA init on %s\"}", ipOnHomeSsid.c_str());
+      module->sendJson(message, httpCode);      
+      delay(200);
       WiFi.mode(WIFI_OFF);
       delay(400);
       WiFi.mode(WIFI_STA);   
       httpCode = module->startOTA(config->getHomeSsid(), config->getHomePwd());
-//      httpCode = module->startOTA("", "");
     }
-    module->sendJson("{}", httpCode);      
   });  
 }  
 
