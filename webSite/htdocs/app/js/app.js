@@ -28,7 +28,7 @@ XIOT.loadCSS = function(path) {
 };
 
 $(document).ready(function() {
-  $('body').append($('<div class="container-fluid" id="container"><h1>Iotinator</h1><div id="main"><div id="module-list" class="row"></div></div></div>'));
+  $('body').append($('<div class="container-fluid" id="container"><h1>Iotinator</h1><div class="commands"><span id="restart" class="icon icon-loop2"/></div><div id="main"><div id="module-list" class="row"></div></div></div>'));
   
   // TODO: make this dynamic, loading modules present in the list api response
   loadModuleFiles("switchUIClass");
@@ -114,7 +114,7 @@ $(document).ready(function() {
     tagName: "div",
     template: _.template('\
 <div class="moduleWrapper <%- uiClassName %> <%- alert %>" moduleId="<%- id %>">\
-  <div class="name"><%- name %><div class="commands"><span class="icon icon-cog"/><span class="icon icon-loop2"/><span class="icon icon-floppy-disk"/></div></div>\
+  <div class="name"><span><%- name %></span><input class="nameEditor" value="<%- name %>"/><div class="commands"><span class="icon icon-cog"/><span class="icon icon-loop2"/><span class="icon icon-floppy-disk"/></div></div>\
   <div class="moduleContent" id="content_<%- id %>"></div>\
   <hr/>\
   <div class="footer connected c<%-connected%>"></div>\
@@ -143,11 +143,49 @@ $(document).ready(function() {
       }
       
       return this;
+    },
+    events : {
+      "click div.moduleWrapper div.name span": "startEditName",
+      "keyup div.moduleWrapper div.name input": "editName"
+    },
+    "startEditName": function(evt) {
+      $(evt.target.parentNode).addClass("editing");
+      let input = evt.target.nextSibling;
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;      
+    },
+    "editName": function(evt) {
+      // Cancel editing on esc
+      if (evt.keyCode == 27) {
+        $(evt.target.parentNode).removeClass("editing");
+        evt.target.value = evt.target.getAttribute("value");
+        return;
+      }
+      
+      // Validate editing on return
+      if (evt.keyCode == 0xd) {
+          $(evt.target.parentNode).removeClass("editing");
+          let newName = evt.target.value;
+          let ip = this.model.attributes.ip;
+          fetch(document.location.origin + "/api/rename", {
+            method:"POST", 
+            body:'{"name" : "' + newName + '"}',
+            headers: new Headers({
+              "Xiot-forward-to": ip,
+            })
+          });
+          evt.target.previousSibling.innerText = newName;
+      }
     }
+    
   });
 
   let AppView = Backbone.View.extend({
-    el: $("#main"),
+    xiotRestart: function() {
+      console.log("Restart");
+      fetch(document.location.origin + "/api/restart");
+    },    
+    el: $('body'),
     initialize: function() {
       this.listenTo(modules, 'add', this.addOne);
       this.listenTo(modules, 'reset', this.addAll);
@@ -161,16 +199,19 @@ $(document).ready(function() {
     addAll: function() {
       this.$("#module-list").empty();
       modules.each(this.addOne, this);
-    }
+    },
+    events: {
+      "click span#restart": "xiotRestart",
+    }    
   });
   
   let app = new AppView({model: modules, id: "modules"});
   window.app = app;
   // Delay to allow module code to load. Temporary
   // TODO: make module code loading dynamic 
-  setTimeout(fetch, 500);
+  setTimeout(getModules, 500);
 
-  function fetch() {
+  function getModules() {
     if(!$('body').hasClass("editing")) {
       $('body').removeClass('fetchingError');
       $('body').addClass('fetching');
@@ -178,13 +219,11 @@ $(document).ready(function() {
         reset: false,
         error: function(collection, response, options) {
           $('body').addClass('fetchingError');
-          setTimeout(fetch, 11000);
-          //debugger;
+          setTimeout(getModules, 11000);
         },
         complete: function(data) {
           $('body').removeClass('fetching');
-          debugger;
-          setTimeout(fetch, 11000);
+          setTimeout(getModules, 11000);
         }
       });
     }

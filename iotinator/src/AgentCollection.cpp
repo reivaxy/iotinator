@@ -230,7 +230,6 @@ void AgentCollection::autoRename(Agent *agent) {
   char newName[NAME_MAX_LENGTH + 1];
 
   bool ok = false;
-  int i;
   strcpy(alpha, agent->getName());
   char *withUnderscore = strtok(alpha, "_");
   if(withUnderscore != NULL) {
